@@ -1,3 +1,4 @@
 # sirkaattendancekaproject
 # architecture
-![mermaid-diagram-2025-01-14-111147](https://github.com/user-attachments/assets/48728454-381d-4925-b535-a78eca10282a)
+
+![mermaid-diagram-2025-01-14-111229](https://github.com/user-attachments/assets/a9e1e903-5a18-471c-bdb1-b93737af1933)
