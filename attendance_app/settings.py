@@ -38,8 +38,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "face_reco",
-    "student",
     "home",
+    'users',
+    'attendance'
 ]
 
 MIDDLEWARE = [
@@ -52,7 +53,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "attendance.urls"
+ROOT_URLCONF = "attendance_app.urls"
 
 TEMPLATES = [
     {
@@ -70,7 +71,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "attendance.wsgi.application"
+WSGI_APPLICATION = "attendance_app.wsgi.application"
 
 
 # Database
