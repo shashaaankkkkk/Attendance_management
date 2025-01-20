@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    {% extends 'attendance/base.html' %}
+    {% block content %}
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <!-- Header Section -->
+            <div class="border-b border-gray-200 pb-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">Mark Attendance</h1>
+                <p class="mt-2 text-gray-600">{{ class_obj.name }} - {{ current_date|date:"F d, Y" }}</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="flex space-x-4 mb-6">
+                <button 
+                    id="markAllPresent" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                    Mark All Present
+                </button>
+                <button 
+                    id="markAllAbsent" 
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                    Mark All Absent
+                </button>
+            </div>
+
+            <!-- Attendance Form -->
+            <form method="POST" id="attendanceForm">
+                {% csrf_token %}
+                
+                <!-- Search Box -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchStudent" 
+                            placeholder="Search students..." 
+                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        >
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students List -->
+                <div class="overflow-hidden bg-white shadow sm:rounded-md">
+                    <ul class="divide-y divide-gray-200" id="studentsList">
+                        {% for student in students %}
+                        <li class="student-item hover:bg-gray-50">
+                            <div class="px-4 py-4 flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span class="text-gray-600 font-medium">
+                                                {{ student.user.username|slice:":2"|upper }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 truncate">
+                                            {{ student.user.username }}
+                                        </p>
+                                        <p class="text-sm text-gray-500 truncate">
+                                            Roll No: {{ student.roll_number }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            name="present_{{ student.id }}" 
+                                            class="attendance-checkbox form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        >
+                                        <span class="attendance-status text-sm font-medium text-gray-500">Absent</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-6 flex justify-end">
+                    <button 
+                        type="submit" 
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Submit Attendance
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // Update attendance status text when checkbox changes
+            $('.attendance-checkbox').change(function() {
+                const statusText = $(this).siblings('.attendance-status');
+                statusText.text(this.checked ? 'Present' : 'Absent');
+                statusText.removeClass('text-gray-500 text-green-600 text-red-600');
+                statusText.addClass(this.checked ? 'text-green-600' : 'text-red-600');
+            });
+
+            // Mark all present button
+            $('#markAllPresent').click(function() {
+                $('.attendance-checkbox').prop('checked', true).trigger('change');
+            });
+
+            // Mark all absent button
+            $('#markAllAbsent').click(function() {
+                $('.attendance-checkbox').prop('checked', false).trigger('change');
+            });
+
+            // Search functionality
+            $('#searchStudent').on('input', function() {
+                const searchTerm = $(this).val().toLowerCase();
+                $('.student-item').each(function() {
+                    const studentName = $(this).find('.text-gray-900').text().toLowerCase();
+                    const rollNumber = $(this).find('.text-gray-500').text().toLowerCase();
+                    if (studentName.includes(searchTerm) || rollNumber.includes(searchTerm)) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            });
+
+            // Submit form handling
+            $('#attendanceForm').submit(function() {
+                const checkedCount = $('.attendance-checkbox:checked').length;
+                const totalStudents = $('.attendance-checkbox').length;
+                return confirm(`You are marking ${checkedCount} students as present and ${totalStudents - checkedCount} students as absent. Continue?`);
+            });
+        });
+    </script>
+    {% endblock %}
+</body>
+</html>
