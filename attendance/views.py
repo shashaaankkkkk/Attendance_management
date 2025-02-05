@@ -19,7 +19,7 @@ def user_login(request):
         form = LoginForm()
     return render(request, 'attendance/login.html', {'form': form})
 
-@login_required
+@login_required(login_url="login")
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
