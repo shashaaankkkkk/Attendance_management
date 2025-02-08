@@ -8,6 +8,8 @@ class User(AbstractUser):
         ('student', 'Student'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    must_change_password = models.BooleanField(default=False)
+    
 
 # Teacher model that extends User model
 class Teacher(models.Model):

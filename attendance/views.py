@@ -4,6 +4,15 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from .models import Class, Student, Attendance
 from .forms import LoginForm, AttendanceForm
+import csv
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.db import transaction
+from django.contrib.auth.decorators import user_passes_test
+from django.urls import reverse
+from .models import User, Student, Class
+from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 
 def user_login(request):
     if request.method == 'POST':
@@ -121,4 +130,95 @@ def show_attendance(request, class_id):
         'class_obj': class_obj,
         'attendance_records': attendance_records,
         'selected_date': selected_date,
+    })
+
+
+def password_change_required(user):
+    return not user.must_change_password
+
+@login_required
+def first_login_password_change(request):
+    if not request.user.must_change_password:
+        return redirect('home')  # or wherever you want to redirect users who don't need to change password
+
+    if request.method == 'POST':
+        form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            request.user.must_change_password = False
+            request.user.save()
+            messages.success(request, 'Your password has been changed successfully. Please log in with your new password.')
+            return redirect('login')
+    else:
+        form = FirstLoginPasswordChangeForm(user=request.user)
+
+    return render(request, 'attendance/first_login_password_change.html', {'form': form})
+
+@login_required
+@user_passes_test(lambda u: u.role == 'teacher')
+def bulk_student_upload(request, class_id):
+    try:
+        class_obj = Class.objects.get(id=class_id)
+    except Class.DoesNotExist:
+        messages.error(request, "Class not found")
+        return redirect('class_list')
+
+    if request.method == 'POST':
+        form = BulkStudentUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES['csv_file']
+            
+            if not csv_file.name.endswith('.csv'):
+                messages.error(request, 'Please upload a CSV file')
+                return redirect('bulk_student_upload', class_id=class_id)
+
+            try:
+                decoded_file = csv_file.read().decode('utf-8').splitlines()
+                csv_reader = csv.DictReader(decoded_file)
+                
+                for row in csv_reader:
+                    with transaction.atomic():
+                        roll_number = row['roll_number'].strip()
+                        
+                        # Use roll number as username
+                        user, user_created = User.objects.get_or_create(
+                            username=roll_number,
+                            defaults={
+                                'email': row['email'],
+                                'first_name': row['first_name'],
+                                'last_name': row['last_name'],
+                                'role': 'student',
+                                'must_change_password': True
+                            }
+                        )
+
+                        if user_created:
+                            # Set roll number as initial password
+                            user.set_password(roll_number)
+                            user.save()
+
+                        # Create or get student profile
+                        student, student_created = Student.objects.get_or_create(
+                            user=user,
+                            defaults={
+                                'roll_number': roll_number
+                            }
+                        )
+
+                        # Add student to class if not already added
+                        if class_obj not in student.classes.all():
+                            student.classes.add(class_obj)
+
+                messages.success(request, 'Students have been successfully uploaded and added to the class')
+                return redirect('class_detail', class_id=class_id)
+
+            except Exception as e:
+                messages.error(request, f'Error processing CSV file: {str(e)}')
+                return redirect('bulk_student_upload', class_id=class_id)
+    else:
+        form = BulkStudentUploadForm()
+
+    return render(request, 'attendance/bulk_student_upload.html', {
+        'form': form,
+        'class_obj': class_obj
     })

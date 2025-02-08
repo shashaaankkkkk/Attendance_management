@@ -48,6 +48,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "attendance.middle.PasswordChangeMiddleware"
 ]
 
 ROOT_URLCONF = "attendance_app.urls"
