@@ -210,7 +210,7 @@ def bulk_student_upload(request, class_id):
                             student.classes.add(class_obj)
 
                 messages.success(request, 'Students have been successfully uploaded and added to the class')
-                return redirect('class_detail', class_id=class_id)
+                return redirect('mark_attendance', class_id=class_id)
 
             except Exception as e:
                 messages.error(request, f'Error processing CSV file: {str(e)}')
