@@ -1,0 +1,10 @@
+Dear {{ student_name }},
+
+This email is to inform you that you were marked absent in {{ class_name }} on {{ date }}.
+
+If you believe this is an error, please contact your teacher or the administration office.
+
+Best regards,
+{{ class_name }} Administration
+
+Note: This is an automated message. Please do not reply to this email.

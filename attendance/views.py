@@ -1,19 +1,17 @@
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required
-from .models import Class, Student, Attendance
+from django.contrib.auth.decorators import login_required , user_passes_test
+from .models import Class, Student, Attendance , User
 from .forms import LoginForm, AttendanceForm
 import csv
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
 from django.db import transaction
-from django.contrib.auth.decorators import user_passes_test
 from django.urls import reverse
-from .models import User, Student, Class
 from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
-
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
 def user_login(request):
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
@@ -48,11 +46,23 @@ def mark_attendance(request, class_id):
                 date=today,
                 defaults={'present': present}
             )
+            
             if not _:  # If record exists, update it
-                attendance_record.present = present
-                attendance_record.save()
+                # Check if attendance status changed from present to absent
+                if attendance_record.present and not present:
+                    attendance_record.present = present
+                    attendance_record.save()
+                    # Send absence notification
+                    send_absence_notification(student, class_obj.name, today)
+                else:
+                    attendance_record.present = present
+                    attendance_record.save()
+            elif not present:  # New record and student is absent
+                # Send absence notification
+                send_absence_notification(student, class_obj.name, today)
                 
         return redirect('teacher_dashboard')
+    
     
     # Get existing attendance records for today
     students = class_obj.students.all()
@@ -222,3 +232,36 @@ def bulk_student_upload(request, class_id):
         'form': form,
         'class_obj': class_obj
     })
+
+
+def send_absence_notification(student, class_name, date):
+    """
+    Send an email notification to a student when they are marked absent.
+    """
+    subject = f'Absence Notification - {class_name}'
+    
+    # Prepare context for email template
+    context = {
+        'student_name': student.user.get_full_name(),
+        'class_name': class_name,
+        'date': date.strftime('%B %d, %Y'),
+    }
+    
+    # Render HTML email content from template
+    html_message = render_to_string('attendance/email/absence_notification.html', context)
+    plain_message = render_to_string('attendance/email/absence_notification.txt', context)
+    
+    # Send email
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[student.user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {student.user.email}: {str(e)}")
+        return False

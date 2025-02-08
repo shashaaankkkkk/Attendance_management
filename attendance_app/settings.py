@@ -124,3 +124,13 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = 'attendance.User'
+
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Or your email provider's SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'shashankshekhar8534@gmail.com'
+EMAIL_HOST_PASSWORD = 'juoq jmnl gybb atbf'
+DEFAULT_FROM_EMAIL = 'shashankshekhar8534@gmail.com'
