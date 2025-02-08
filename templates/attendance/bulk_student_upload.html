@@ -1,0 +1,145 @@
+<!-- templates/bulk_student_upload.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Student Upload - {{ class_obj.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-6 lg:p-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Bulk Upload Students</h1>
+                <p class="mt-2 text-gray-600">Class: {{ class_obj.name }}</p>
+            </div>
+
+            <!-- Main Content -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <!-- Instructions Card -->
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">CSV File Requirements</h2>
+                    <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-blue-400 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-blue-800">Required CSV Format</h3>
+                                <div class="mt-2 text-sm text-blue-700">
+                                    <p class="mb-2">Your CSV file must include the following columns:</p>
+                                    <ul class="list-disc pl-5 space-y-1">
+                                        <li>roll_number (will be used as username)</li>
+                                        <li>email</li>
+                                        <li>first_name</li>
+                                        <li>last_name</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sample CSV Format -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-800 mb-2">Sample CSV Format:</h3>
+                        <div class="bg-gray-800 rounded-md p-4 overflow-x-auto">
+                            <pre class="text-xs text-gray-200">roll_number,email,first_name,last_name
+R2023001,john@example.com,John,Doe
+R2023002,jane@example.com,Jane,Smith</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload Form -->
+                <div class="p-6">
+                    {% if messages %}
+                    <div class="mb-6">
+                        {% for message in messages %}
+                        <div class="rounded-md {% if message.tags == 'success' %}bg-green-50 text-green-800{% else %}bg-red-50 text-red-800{% endif %} p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    {% if message.tags == 'success' %}
+                                    <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% else %}
+                                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm">{{ message }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" class="space-y-6">
+                        {% csrf_token %}
+                        <div>
+                            <label for="csv_file" class="block text-sm font-medium text-gray-700">Upload CSV File</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                    <div class="flex text-sm text-gray-600">
+                                        <label for="{{ form.csv_file.id_for_label }}" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                            <span>Upload a file</span>
+                                            {{ form.csv_file }}
+                                        </label>
+                                        <p class="pl-1">or drag and drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">CSV files only</p>
+                                </div>
+                            </div>
+                            {% if form.csv_file.errors %}
+                            <p class="mt-2 text-sm text-red-600">{{ form.csv_file.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex justify-end space-x-3">
+                            <a href="#" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Cancel
+                            </a>
+                            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Upload Students
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mt-6 text-sm text-gray-500">
+                <p>Note: Students will use their roll number as both username and initial password.</p>
+                <p>They will be prompted to change their password on first login.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Style the file input
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.querySelector('input[type="file"]');
+            fileInput.classList.add('sr-only');
+            
+            // Show selected filename
+            fileInput.addEventListener('change', function() {
+                const fileName = this.files[0]?.name;
+                if (fileName) {
+                    const fileNameElement = document.createElement('p');
+                    fileNameElement.classList.add('mt-2', 'text-sm', 'text-gray-500');
+                    fileNameElement.textContent = `Selected file: ${fileName}`;
+                    this.parentElement.appendChild(fileNameElement);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
