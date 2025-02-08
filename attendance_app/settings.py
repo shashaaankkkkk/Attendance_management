@@ -72,7 +72,7 @@ TEMPLATES = [
         },
     },
 ]
-
+LOGIN_URL=""
 WSGI_APPLICATION = "attendance_app.wsgi.application"
 
 
