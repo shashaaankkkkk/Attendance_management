@@ -12,14 +12,10 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-<<<<<<< HEAD
-def ppassword(request):
-    return render(request,'attendance/first_login_password_change.html',{'form':form})    
-def user_login(request): 
-=======
 from collections import defaultdict
+def ppassword(request):
+    return render(request,'attendance/first_login_password_change.html',{'form':form})
 def user_login(request):
->>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -36,9 +32,6 @@ def user_login(request):
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
-<<<<<<< HEAD
-=======
-
 @login_required(login_url="login")
 def teacher_classes(request):
     """View function for the teacher's ERP dashboard."""
@@ -68,7 +61,6 @@ def teacher_classes(request):
         'class_data': class_data
     }
     return render(request, 'attendance/teacher_classes.html', context)
->>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
 @login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)

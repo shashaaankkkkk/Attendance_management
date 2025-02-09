@@ -10,9 +10,4 @@ urlpatterns = [
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
     path('class/<int:class_id>/bulk-upload/', views.bulk_student_upload, name='bulk_student_upload'),
     path('change-password/', views.first_login_password_change, name='first_login_password_change'),
-<<<<<<< HEAD
-    path('changepass',views.ppassword),
-=======
-    path('mekochangepasswordkauibananedo',views.changepasstemp),
->>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
 ]
