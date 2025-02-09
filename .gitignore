@@ -155,4 +155,8 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+<<<<<<< HEAD
 >>>>>>> b3258a336d48eae1060a50124eb8224be6865e2a
+=======
+attendance_app/__pycache__/settings.cpython-312.pyc
+>>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809

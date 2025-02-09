@@ -161,6 +161,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ attendance.student.user.username }}
+                                    {{ attendance.student.user.first_name }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {{ attendance.student.roll_number }}
@@ -214,12 +215,18 @@
                     right: 'month,agendaWeek,agendaDay'
                 },
                 events: [
-                    {% for attendance in attendance_records %}
+                    {% for date_key, summary in attendance_summary.items %}
                     {
-                        title: "{{ attendance.student.user.username }} - {% if attendance.present %}Present{% else %}Absent{% endif %}",
-                        start: "{{ attendance.date }}",
-                        description: "Attendance status: {% if attendance.present %}Present{% else %}Absent{% endif %}",
-                        color: "{% if attendance.present %}#22c55e{% else %}#ef4444{% endif %}",
+                        title: "Present: {{ summary.present_count }}",
+                        start: "{{ date_key }}",
+                        description: "Total Present: {{ summary.present_count }}",
+                        color: "#22c55e",  // Green for Present
+                    },
+                    {
+                        title: "Absent: {{ summary.absent_count }}",
+                        start: "{{ date_key }}",
+                        description: "Total Absent: {{ summary.absent_count }}",
+                        color: "#FAA0A0",  // Red for Absent
                     },
                     {% endfor %}
                 ],
@@ -259,5 +266,6 @@
             });
         });
     </script>
+    
 </body>
 </html>

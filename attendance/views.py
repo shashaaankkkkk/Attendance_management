@@ -12,9 +12,14 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+<<<<<<< HEAD
 def ppassword(request):
     return render(request,'attendance/first_login_password_change.html',{'form':form})    
 def user_login(request): 
+=======
+from collections import defaultdict
+def user_login(request):
+>>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -31,6 +36,39 @@ def user_login(request):
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
+<<<<<<< HEAD
+=======
+
+@login_required(login_url="login")
+def teacher_classes(request):
+    """View function for the teacher's ERP dashboard."""
+    if not hasattr(request.user, 'teacher_profile'):
+        return render(request, 'error.html', {'message': 'You are not authorized to access this page.'})
+
+    teacher = request.user.teacher_profile
+    classes = teacher.classes.all()  # Get all classes assigned to the teacher
+
+    # Data collection for each class
+    class_data = []
+    for cls in classes:
+        students = cls.students.all()
+        total_students = students.count()
+        
+        # Attendance records for the latest date
+        latest_attendance = Attendance.objects.filter(class_name=cls).order_by('-date')[:5]
+        
+        class_data.append({
+            'class': cls,
+            'total_students': total_students,
+            'latest_attendance': latest_attendance
+        })
+
+    context = {
+        'teacher': teacher,
+        'class_data': class_data
+    }
+    return render(request, 'attendance/teacher_classes.html', context)
+>>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
 @login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
@@ -120,6 +158,7 @@ def student_dashboard(request):
         ]
     })
 
+
 @login_required
 def show_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
@@ -131,15 +170,27 @@ def show_attendance(request, class_id):
         except ValueError:
             pass  # Keep using today's date if invalid date provided
 
-    attendance_records = Attendance.objects.filter(
-        class_name=class_obj,
-        date=selected_date
-    )
+    # Fetch attendance for the selected date
+    attendance_records = Attendance.objects.filter(class_name=class_obj, date=selected_date)
+
+    # Generate attendance summary for calendar
+    attendance_summary = {}
+
+    all_attendance = Attendance.objects.filter(class_name=class_obj)
+    for record in all_attendance:
+        record_date = record.date.strftime("%Y-%m-%d")  # Convert date to string for JSON compatibility
+        if record_date not in attendance_summary:
+            attendance_summary[record_date] = {"present_count": 0, "absent_count": 0}
+        if record.present:
+            attendance_summary[record_date]["present_count"] += 1
+        else:
+            attendance_summary[record_date]["absent_count"] += 1
 
     return render(request, 'attendance/show_attendance.html', {
         'class_obj': class_obj,
         'attendance_records': attendance_records,
         'selected_date': selected_date,
+        'attendance_summary': attendance_summary,  # Send dictionary directly
     })
 
 
@@ -149,7 +200,7 @@ def password_change_required(user):
 @login_required
 def first_login_password_change(request):
     if not request.user.must_change_password:
-        return redirect('home')  # or wherever you want to redirect users who don't need to change password
+        return redirect('/')  # or wherever you want to redirect users who don't need to change password
 
     if request.method == 'POST':
         form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
@@ -264,3 +315,8 @@ def send_absence_notification(student, class_name, date):
     except Exception as e:
         print(f"Failed to send email to {student.user.email}: {str(e)}")
         return False
+
+
+def changepasstemp(request):
+    form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
+    return render(request,"attendance/first_login_password_change.html",{"form":form})
