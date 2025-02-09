@@ -314,9 +314,7 @@ def send_absence_notification(student, class_name, date):
 
 def changepasstemp(request):
     form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
-<<<<<<< HEAD
     return render(request,"attendance/first_login_password_change.html",{"form":form})
-=======
     return render(request,"attendance/first_login_password_change.html",{"form":form})
 
 
@@ -354,4 +352,3 @@ def student_profile(request):
         return redirect('home')  # Redirect if the user is not a student
 
     return render(request, 'attendance/student_profile.html', {'student': student})
->>>>>>> 87d30bbc94b7fa3dd22ce5c3cc12b9eec5789c5b
