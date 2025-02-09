@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
-from .forms import LoginForm, AttendanceForm
+from .forms import LoginForm, AttendanceForm , StudentProfileForm, UserProfileForm
 import csv
 from django.contrib import messages
 from django.db import transaction
@@ -12,6 +12,9 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+
+
+
 
 def user_login(request):
     if request.method == 'POST':
@@ -312,3 +315,29 @@ def send_absence_notification(student, class_name, date):
 def changepasstemp(request):
     form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
     return render(request,"attendance/first_login_password_change.html",{"form":form})
+
+
+
+@login_required  
+def edit_student_profile(request):  
+    student = request.user.student_profile  
+    user = request.user  
+
+    if request.method == 'POST':  
+        user_form = UserProfileForm(request.POST, instance=user)  
+        student_form = StudentProfileForm(request.POST, instance=student)  
+
+        if user_form.is_valid() and student_form.is_valid():  
+            user_form.save()  
+            student_form.save()  
+            return redirect('profile')  
+
+    else:  
+        user_form = UserProfileForm(instance=user)  
+        student_form = StudentProfileForm(instance=student)  
+
+    return render(request, 'attendance/edit_student_profile.html', {  
+        'user_form': user_form,  
+        'student_form': student_form,  
+        'student': student  
+    })  

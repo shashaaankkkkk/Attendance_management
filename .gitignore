@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 /home/__pycache__/
 home/__pycache__/apps.cpython-312.pyc
 attendance/__pycache__/settings.cpython-312.pyc
@@ -16,7 +16,7 @@ attendance/__pycache__/wsgi.cpython-312.pyc
 attendance/__pycache__/urls.cpython-312.pyc
 attendance/__pycache__/__init__.cpython-312.pyc
 face_reco/migrations/__pycache__/__init__.cpython-312.pyc
-=======
+
 # Django #
 *.log
 *.pot
@@ -155,11 +155,11 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
-<<<<<<< HEAD
->>>>>>> b3258a336d48eae1060a50124eb8224be6865e2a
-=======
+
+
+
 attendance_app/__pycache__/settings.cpython-312.pyc
->>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
+
 templates/attendance/teacher_dashboard.html
 attendance/__pycache__/admin.cpython-313.pyc
 .gitignore
@@ -180,3 +180,7 @@ attendance_app/__pycache__/__init__.cpython-313.pyc
 attendance_app/__pycache__/settings.cpython-313.pyc
 attendance_app/__pycache__/urls.cpython-313.pyc
 attendance_app/__pycache__/wsgi.cpython-313.pyc
+attendance/__pycache__/__init__.cpython-313.pyc
+attendance/__pycache__/__init__.cpython-313.pyc
+attendance/__pycache__/admin.cpython-313.pyc
+attendance/__pycache__/apps.cpython-313.pyc

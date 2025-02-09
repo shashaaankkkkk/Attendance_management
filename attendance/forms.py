@@ -1,6 +1,8 @@
 from django import forms
 from .models import Attendance
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm , PasswordChangeForm
+from django.contrib.auth import get_user_model  
+from .models import Student  
 
 class AttendanceForm(forms.ModelForm):
     class Meta:
@@ -13,8 +15,6 @@ class LoginForm(AuthenticationForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput(attrs={'class': 'form-input'}))
 
 
-from django import forms
-from django.contrib.auth.forms import PasswordChangeForm
 
 class BulkStudentUploadForm(forms.Form):
     csv_file = forms.FileField(
@@ -27,3 +27,26 @@ class FirstLoginPasswordChangeForm(PasswordChangeForm):
         super().__init__(*args, **kwargs)
         # Remove the old password field since it's the default password
         del self.fields['old_password']
+
+
+
+User = get_user_model()  
+
+class StudentProfileForm(forms.ModelForm):  
+    class Meta:  
+        model = Student  
+        fields = ['classes']  
+
+    def __init__(self, *args, **kwargs):  
+        super().__init__(*args, **kwargs)  
+        self.fields['classes'].widget.attrs.update({'class': 'w-full p-2 border rounded'})  
+
+class UserProfileForm(forms.ModelForm):  
+    class Meta:  
+        model = User  
+        fields = ['first_name', 'last_name', 'email']  
+
+    def __init__(self, *args, **kwargs):  
+        super().__init__(*args, **kwargs)  
+        for field in self.fields.values():  
+            field.widget.attrs.update({'class': 'w-full p-2 border rounded'})  
