@@ -330,7 +330,7 @@ def edit_student_profile(request):
         if user_form.is_valid() and student_form.is_valid():  
             user_form.save()  
             student_form.save()  
-            return redirect('profile')  
+            return redirect('student_profile')  
 
     else:  
         user_form = UserProfileForm(instance=user)  
@@ -341,3 +341,13 @@ def edit_student_profile(request):
         'student_form': student_form,  
         'student': student  
     })  
+
+
+@login_required
+def student_profile(request):
+    try:
+        student = request.user.student_profile  # Get student profile linked to the user
+    except Student.DoesNotExist:
+        return redirect('home')  # Redirect if the user is not a student
+
+    return render(request, 'attendance/student_profile.html', {'student': student})

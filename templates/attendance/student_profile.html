@@ -1,0 +1,25 @@
+{% extends "./student_base.html" %}
+
+{% block content %}
+  <div class="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-6 mt-10">
+    <h2 class="text-3xl font-bold text-gray-800 text-center mb-6">Student Profile</h2>
+    
+    <div class="bg-gray-100 p-4 rounded-lg">
+      <p class="text-lg"><strong>Username:</strong> {{ student.user.username }}</p>
+      <p class="text-lg"><strong>Full Name:</strong> {{ student.user.first_name }} {{ student.user.last_name }}</p>
+      <p class="text-lg"><strong>Email:</strong> {{ student.user.email }}</p>
+      <p class="text-lg"><strong>Roll Number:</strong> {{ student.roll_number }}</p>
+      <p class="text-lg"><strong>Classes Enrolled:</strong></p>
+      
+      <ul class="list-disc pl-5">
+        {% for class in student.classes.all %}
+          <li class="text-blue-600">{{ class.name }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="mt-6 text-center">
+      <a href="{% url 'edit_profile' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit Profile</a>
+    </div>
+  </div>
+{% endblock %}
