@@ -1,6 +1,6 @@
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate ,logout
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
 from .forms import LoginForm, AttendanceForm , StudentProfileForm, UserProfileForm
@@ -12,6 +12,7 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+
 
 
 
@@ -29,6 +30,13 @@ def user_login(request):
     else:
         form = LoginForm()
     return render(request, 'attendance/login.html', {'form': form})
+def user_logout(request):
+   if request.method == "POST":  
+        logout(request)
+        return redirect('login') 
+    
+   return render(request, 'attendance/logout_confirmation.html')
+
 @login_required(login_url="login")
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
@@ -191,7 +199,6 @@ def show_attendance(request, class_id):
 
 def password_change_required(user):
     return not user.must_change_password
-
 @login_required
 def first_login_password_change(request):
     if not request.user.must_change_password:
