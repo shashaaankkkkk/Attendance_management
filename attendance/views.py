@@ -12,7 +12,7 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-from collections import defaultdict
+
 def user_login(request):
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
@@ -26,11 +26,12 @@ def user_login(request):
     else:
         form = LoginForm()
     return render(request, 'attendance/login.html', {'form': form})
-
 @login_required(login_url="login")
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
+
+
 
 @login_required(login_url="login")
 def teacher_classes(request):
@@ -61,6 +62,7 @@ def teacher_classes(request):
         'class_data': class_data
     }
     return render(request, 'attendance/teacher_classes.html', context)
+
 @login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
@@ -275,7 +277,6 @@ def bulk_student_upload(request, class_id):
         'form': form,
         'class_obj': class_obj
     })
-
 
 def send_absence_notification(student, class_name, date):
     """

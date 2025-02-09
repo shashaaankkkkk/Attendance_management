@@ -1,3 +1,22 @@
+<<<<<<< HEAD
+/home/__pycache__/
+home/__pycache__/apps.cpython-312.pyc
+attendance/__pycache__/settings.cpython-312.pyc
+face_reco/__pycache__/__init__.cpython-312.pyc
+face_reco/__pycache__/apps.cpython-312.pyc
+face_reco/__pycache__/models.cpython-312.pyc
+face_reco/__pycache__/admin.cpython-312.pyc
+home/migrations/__pycache__/__init__.cpython-312.pyc
+student/migrations/__pycache__/__init__.cpython-312.pyc
+student/__pycache__/admin.cpython-312.pyc
+student/__pycache__/apps.cpython-312.pyc
+student/__pycache__/__init__.cpython-312.pyc
+student/__pycache__/models.cpython-312.pyc
+attendance/__pycache__/wsgi.cpython-312.pyc
+attendance/__pycache__/urls.cpython-312.pyc
+attendance/__pycache__/__init__.cpython-312.pyc
+face_reco/migrations/__pycache__/__init__.cpython-312.pyc
+=======
 # Django #
 *.log
 *.pot
@@ -136,4 +155,8 @@ GitHub.sublime-settings
 !.vscode/launch.json 
 !.vscode/extensions.json 
 .history
+<<<<<<< HEAD
+>>>>>>> b3258a336d48eae1060a50124eb8224be6865e2a
+=======
 attendance_app/__pycache__/settings.cpython-312.pyc
+>>>>>>> 3566580fb1cee0c3f8099ca8876f68eaf16ef809
