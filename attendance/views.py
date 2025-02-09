@@ -32,7 +32,7 @@ def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
 
-@login_required(login_url="login")
+
 def teacher_classes(request):
     """View function for the teacher's ERP dashboard."""
     if not hasattr(request.user, 'teacher_profile'):
@@ -61,6 +61,7 @@ def teacher_classes(request):
         'class_data': class_data
     }
     return render(request, 'attendance/teacher_classes.html', context)
+
 @login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)

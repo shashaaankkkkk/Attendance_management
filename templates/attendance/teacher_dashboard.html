@@ -39,7 +39,7 @@
     <div class="min-h-screen">
         <!-- Sidebar -->
         <!-- Sidebar -->
-<aside class="fixed w-64 h-full bg-gray-200 text-black transition-all duration-300 transform">
+<aside class="fixed w-64 h-full bg-white text-black rounded-lg drop-shadow transition-all duration-300 transform">
     <div class="p-6">
         <h2 class="text-2xl font-bold mb-6 fade-in"></h2>
         <nav class="space-y-4 mt-12">
@@ -51,11 +51,11 @@
                 <span>Dashboard</span>
             </a>
             <!-- Students -->
-            <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:text-[#077fbb] hover:bg-gray-100 transition-colors duration-200">
+            <a href="/teacher/classes/" class="flex items-center space-x-3 p-3 rounded-lg hover:text-[#077fbb] hover:bg-gray-100 transition-colors duration-200">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
-                <span>Students</span>
+                <span>Classes</span>
             </a>
             <!-- Attendance -->
             <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:text-[#077fbb] hover:bg-gray-100 transition-colors duration-200">
@@ -105,13 +105,13 @@
                             <p class="mt-2 text-gray-600">Today is <span id="currentDate"></span></p>
                         </div>
                         <div class="flex space-x-4">
-                            <button 
+                            <a href="/teacher/classes/"
                             class="inline-flex items-center px-4 py-2 border border-transparent text-md font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 Take Attendance
-                            </button>
-                        <button class="inline-flex items-center px-4 py-2 border border-transparent text-md font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        </a>
+                        <a class="inline-flex items-center px-4 py-2 border border-transparent text-md font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                 Generate Report
-                            </button>
+                        </a>
                         </div>
                     </div>
                 </div>
