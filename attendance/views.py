@@ -31,7 +31,6 @@ def user_login(request):
 def teacher_dashboard(request):
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
-
 @login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
