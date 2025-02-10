@@ -138,3 +138,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", default="")
+
+
+INSTALLED_APPS += ['corsheaders']
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+CORS_ALLOW_ALL_ORIGINS = True  # Allow all requests (for development)

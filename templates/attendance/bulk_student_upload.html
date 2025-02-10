@@ -1,13 +1,5 @@
-<!-- templates/bulk_student_upload.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulk Student Upload - {{ class_obj.name }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50">
+{% extends "./base.html" %}
+{% block content %}
     <div class="min-h-screen p-6 lg:p-8">
         <div class="max-w-4xl mx-auto">
             <!-- Header -->
@@ -45,9 +37,9 @@
                     <div class="bg-gray-50 rounded-lg p-4">
                         <h3 class="text-sm font-medium text-gray-800 mb-2">Sample CSV Format:</h3>
                         <div class="bg-gray-800 rounded-md p-4 overflow-x-auto">
-                            <pre class="text-xs text-gray-200">roll_number,email,first_name,last_name
-R2023001,john@example.com,John,Doe
-R2023002,jane@example.com,Jane,Smith</pre>
+                            <pre class="text-xs text-gray-200">roll_number,email,first_name
+R2023001,john@example.com,John
+R2023002,jane@example.com,Jane</pre>
                         </div>
                     </div>
                 </div>
@@ -141,5 +133,4 @@ R2023002,jane@example.com,Jane,Smith</pre>
             });
         });
     </script>
-</body>
-</html>
+    {% endblock content %}

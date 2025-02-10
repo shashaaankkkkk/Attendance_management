@@ -21,7 +21,7 @@
                         <tbody>
                             {% for data in class_data %}
                                 <tr class="border-b hover:bg-gray-100">
-                                    <td class="p-3">{{ data.class.name }}</td>
+                                    <td class="p-3"><a class="text-blue" href="{% url 'class_detail' data.class.id %}">{{ data.class.name }}</a></td>
                                     <td class="p-3">
                                         <span class="bg-green-100 text-green-700 text-sm px-2 py-1 rounded">
                                             {{ data.total_students }} students
@@ -41,8 +41,10 @@
                                         {% endif %}
                                     </td>
                                     <td class="p-3">
-                                        <a href="#" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">View</a>
+                                        <a href="{% url 'show_attendance' data.class.id %}"  class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">View</a>
+                                        <a href="{% url 'mark_attendance' data.class.id %}"  class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Mark Attendance</a>
                                     </td>
+                                   
                                 </tr>
                             {% endfor %}
                         </tbody>

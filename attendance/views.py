@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date , timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate ,logout
 from django.contrib.auth.decorators import login_required , user_passes_test
@@ -249,7 +249,7 @@ def bulk_student_upload(request, class_id):
                             defaults={
                                 'email': row['email'],
                                 'first_name': row['first_name'],
-                                'last_name': row['last_name'],
+
                                 'role': 'student',
                                 'must_change_password': True
                             }
@@ -359,3 +359,64 @@ def student_profile(request):
         return redirect('home')  # Redirect if the user is not a student
 
     return render(request, 'attendance/student_profile.html', {'student': student})
+
+
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Attendance, Student, Class
+from datetime import datetime
+
+def fetch_attendance(request, class_id):
+    selected_date = request.GET.get('date', None)
+
+    if selected_date:
+        try:
+            selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'error': 'Invalid date format'}, status=400)
+
+        class_obj = get_object_or_404(Class, id=class_id)
+        attendance_records = Attendance.objects.filter(student__class_obj=class_obj, date=selected_date)
+
+        data = []
+        for record in attendance_records:
+            data.append({
+                'student_name': f"{record.student.user.first_name} {record.student.user.last_name}",
+                'roll_number': record.student.roll_number,
+                'present': record.present
+            })
+
+        return JsonResponse({'attendance': data})
+
+    return JsonResponse({'error': 'Date not provided'}, status=400)
+
+
+
+@login_required
+def class_detail(request, class_id):
+    class_obj = Class.objects.get(id=class_id)
+    students = Student.objects.filter(classes=class_obj)
+    
+    # Get attendance data for the last 7 days
+    dates = [(datetime.today() - timedelta(days=i)).date() for i in range(7)]
+    attendance_data = []
+    
+    for date in dates:
+        present_count = Attendance.objects.filter(
+            class_name=class_obj,
+            date=date,
+            present=True
+        ).count()
+        attendance_data.append({
+            'date': date.strftime('%d %b'),
+            'present': present_count,
+            'total': students.count()
+        })
+    
+    context = {
+        'class': class_obj,
+        'students': students,
+        'attendance_data': attendance_data
+    }
+    return render(request, 'attendance/class_detail.html', context)
