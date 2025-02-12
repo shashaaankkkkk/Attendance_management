@@ -319,10 +319,7 @@ def send_absence_notification(student, class_name, date):
         return False
 
 
-def changepasstemp(request):
-    form = FirstLoginPasswordChangeForm(user=request.user, data=request.POST)
-    return render(request,"attendance/first_login_password_change.html",{"form":form})
-    return render(request,"attendance/first_login_password_change.html",{"form":form})
+
 
 
 
@@ -420,3 +417,92 @@ def class_detail(request, class_id):
         'attendance_data': attendance_data
     }
     return render(request, 'attendance/class_detail.html', context)
+
+from datetime import date, datetime, timedelta
+from calendar import monthrange
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from .models import Class, Attendance, Student
+import json
+
+@login_required
+def excel_attendance(request, class_id):
+    class_obj = get_object_or_404(Class, id=class_id)
+    
+    # Get year and month from request, default to current
+    year = int(request.GET.get('year', date.today().year))
+    month = int(request.GET.get('month', date.today().month))
+    
+    # Get number of days in the month
+    _, num_days = monthrange(year, month)
+    
+    # Generate list of dates for the month
+    dates = [date(year, month, day) for day in range(1, num_days + 1)]
+    
+    # Get all students in the class
+    students = class_obj.students.all().order_by('roll_number')
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            attendance_data = data.get('attendance', {})
+            
+            # Process attendance data
+            for student_id, dates_data in attendance_data.items():
+                student = get_object_or_404(Student, id=student_id)
+                for date_str, present in dates_data.items():
+                    attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    attendance, created = Attendance.objects.get_or_create(
+                        student_id=student_id,
+                        class_name=class_obj,
+                        date=attendance_date,
+                        defaults={'present': present}
+                    )
+                    if not created:
+                        attendance.present = present
+                        attendance.save()
+            
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    # Get existing attendance records for the month
+    attendance_records = Attendance.objects.filter(
+        class_name=class_obj,
+        date__year=year,
+        date__month=month
+    ).select_related('student')
+    
+    # Create attendance matrix
+    attendance_matrix = {}
+    for student in students:
+        attendance_matrix[student.id] = {
+            'student_name': f"{student.user.get_full_name()}",
+            'roll_number': student.roll_number,
+            'attendance': {}
+        }
+        # Initialize all dates as absent
+        for d in dates:
+            attendance_matrix[student.id]['attendance'][d.strftime('%Y-%m-%d')] = False
+    
+    # Fill in existing attendance records
+    for record in attendance_records:
+        date_str = record.date.strftime('%Y-%m-%d')
+        if record.student_id in attendance_matrix:
+            attendance_matrix[record.student_id]['attendance'][date_str] = record.present
+    
+    context = {
+        'class_obj': class_obj,
+        'dates': dates,
+        'students': students,
+        'attendance_matrix': attendance_matrix,
+        'current_month': date(year, month, 1).strftime('%B %Y'),
+        'prev_month': (date(year, month, 1) - timedelta(days=1)).strftime('%Y-%m'),
+        'next_month': (date(year, month, 1) + timedelta(days=32)).strftime('%Y-%m'),
+        'year': year,
+        'month': month,
+    }
+    
+    return render(request, 'attendance/excel_attendance.html', context)
