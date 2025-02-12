@@ -1,6 +1,6 @@
 from datetime import date , timedelta
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate ,logout
+from django.contrib.auth import login, authenticate ,logout,update_session_auth_hash
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
 from .forms import LoginForm, AttendanceForm , StudentProfileForm, UserProfileForm
@@ -12,6 +12,7 @@ from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.contrib.auth.forms import PasswordChangeForm
 
 
 
@@ -420,3 +421,20 @@ def class_detail(request, class_id):
         'attendance_data': attendance_data
     }
     return render(request, 'attendance/class_detail.html', context)
+@login_required
+def change_password(request):
+    if request.method == "POST":
+        form=PasswordChangeForm(user=request.user,data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request,form.user)
+            messages.success(request,"Password has been changed successfully..")
+            if hasattr(request.user, 'role') and request.user.role == 'teacher':
+                return redirect('teacher_dashboard')
+            else:
+                return redirect('student_dashboard')    
+        else:
+            messages.error(request,"Please give valid input")
+    else:
+        form=PasswordChangeForm(user=request.user)
+    return render(request,'attendance/change_pass.html',{'form':form})    
