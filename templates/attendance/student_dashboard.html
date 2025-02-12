@@ -2,27 +2,26 @@
 
 {% block content %}
 
-<div class="container mx-auto py-10">
-<div class="container mx-auto p-6">
+<div class="container mx-auto px-4 py-10">
     <div class="max-w-7xl mx-auto">
 
-        <!-- Header Section -->     
-
-
+        <!-- Header Section -->
         <div class="mb-8">
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">Welcome, {{user.first_name }}</h1>
-            <p class="text-xl text-gray-600">{{ current_month }}</p>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">
+                    Welcome, {{ user.first_name }}
+                </h1>
+                <p class="text-lg sm:text-xl text-gray-600">{{ current_month }}</p>
+            </div>
         </div>
-    </div>
 
         <!-- Class Selection Tabs -->
-        <div class="mb-8">
-            <div class="flex space-x-4 bg-gray-200 shadow-lg border-b border-gray-300 rounded-md">
+        <div class="mb-8 overflow-x-auto">
+            <div class="flex space-x-4 bg-gray-200 shadow-lg border-b border-gray-300 rounded-md overflow-x-auto">
                 {% for class in classes %}
                 <button 
                     onclick="showClass('{{ class.id }}')"
-                    class="class-tab px-6 py-3 font-medium border-b-2 border-transparent hover:border-blue-500 transition-all duration-200"
+                    class="class-tab px-4 sm:px-6 py-3 font-medium border-b-2 border-transparent hover:border-blue-500 transition-all duration-200 whitespace-nowrap"
                     data-class-id="{{ class.id }}">
                     {{ class.name }}
                 </button>
@@ -32,9 +31,9 @@
 
         <!-- Calendar Grids -->
         {% for class in classes %}
-        <div id="class-{{ class.id }}" class="class-calendar hidden ">
+        <div id="class-{{ class.id }}" class="class-calendar hidden">
             <!-- Calendar Header -->
-            <div class="grid grid-cols-7 gap-4 mb-4">
+            <div class="grid grid-cols-7 gap-2 sm:gap-4 text-xs sm:text-base mb-4">
                 <div class="text-center font-semibold">Sun</div>
                 <div class="text-center font-semibold">Mon</div>
                 <div class="text-center font-semibold">Tue</div>
@@ -45,22 +44,27 @@
             </div>
 
             <!-- Calendar Days -->
-            <div class="grid grid-cols-7 gap-4">
+            <div class="grid grid-cols-7 gap-1 sm:gap-4">
                 {% for date in month_dates %}
                 <div class="aspect-square">
-                    <div class="h-full p-2 {% if date.day in class.present_dates %}bg-green-100 hover:bg-green-200{% else %}bg-gray-50 hover:bg-gray-100{% endif %} rounded-lg shadow transition-all duration-200">
-                        <div class="flex flex-col h-full">
-                            <span class="text-lg font-bold {% if date.today %}text-blue-600{% endif %}">
-                                {{ date.day }}
-                            </span>
-                            {% if date.day in class.present_dates %}
-                            <div class="mt-auto">
-                                <span class="inline-block px-2 py-1 bg-green-500 text-white text-xs rounded-full">
-                                    Present
-                                </span>
-                            </div>
-                            {% endif %}
-                        </div>
+                    <div class="h-full p-2 flex flex-col justify-between rounded-lg shadow transition-all duration-200
+                        {% if date.day in class.present_dates %}
+                            bg-green-100 hover:bg-green-200
+                        {% else %}
+                            bg-gray-50 hover:bg-gray-100
+                        {% endif %}">
+                        
+                        <!-- Day Number -->
+                        <span class="text-sm sm:text-lg font-bold {% if date.today %}text-blue-600{% endif %}">
+                            {{ date.day }}
+                        </span>
+                        
+                        {% if date.day in class.present_dates %}
+                        <span class="mt-auto text-center inline-block px-2 py-1 bg-green-500 text-white text-xs sm:text-sm rounded-full">
+                            <span class="sm:inline-block hidden">Present</span> 
+                            <span class="inline-block sm:hidden">P</span> 
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
@@ -69,6 +73,7 @@
         {% endfor %}
     </div>
 </div>
+
 
 <script>
 function showClass(classId) {
