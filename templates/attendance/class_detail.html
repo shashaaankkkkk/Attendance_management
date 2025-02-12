@@ -2,39 +2,39 @@
 {% extends "./base.html" %}
 {% block content %}
     <!-- Main Content -->
-    <div class="ml-64 p-8">
+    <div class="container mx-auto px-4 py-8">
         <!-- Class Header -->
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 space-y-4 lg:space-y-0">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">{{ class.name }}</h1>
                 <p class="text-gray-600">Class Details and Analytics</p>
             </div>
-            <div class="flex space-x-4">
-                <a href="{% url 'bulk_student_upload' class.id %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                    Add student
+            <div class="flex flex-wrap justify-center lg:justify-end gap-4">
+                <a href="{% url 'bulk_student_upload' class.id %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm sm:text-base">
+                    Add Student
                 </a>
-                <a href="{% url 'mark_attendance' class.id %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                <a href="{% url 'mark_attendance' class.id %}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm sm:text-base">
                     Mark Attendance
                 </a>
-                <a href="{% url 'show_attendance' class.id %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                    view Attendance
+                <a href="{% url 'show_attendance' class.id %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
+                    View Attendance
                 </a>
-                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm sm:text-base">
                     Download Report
                 </button>
             </div>
         </div>
-
+    
         <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <!-- Student List -->
-            <div class="lg:col-span-2">
+            <div class="sm:col-span-2">
                 <div class="bg-white rounded-lg shadow">
                     <div class="p-6 border-b border-gray-200">
                         <h2 class="text-xl font-semibold text-gray-800">Students</h2>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="min-w-full">
+                        <table class="min-w-full w-full text-sm sm:text-base">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -51,9 +51,9 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {% for student in students %}
                                 <tr>
-                                    <td class="px-6 py-4">{{ student.roll_number }}</td>
-                                    <td class="px-6 py-4">{{ student.user.first_name }} {{ student.user.last_name }}</td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 whitespace-nowrap">{{ student.roll_number }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">{{ student.user.first_name }} {{ student.user.last_name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                             {{ student.attendance_percentage }}%
                                         </span>
@@ -65,9 +65,9 @@
                     </div>
                 </div>
             </div>
-
+    
             <!-- Attendance Analytics -->
-            <div class="lg:col-span-1">
+            <div class="sm:col-span-1">
                 <div class="bg-white rounded-lg shadow p-6">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Weekly Attendance</h2>
                     <canvas id="attendanceChart"></canvas>
@@ -75,6 +75,7 @@
             </div>
         </div>
     </div>
+    
 
     <script>
         // Initialize attendance chart with Django template data

@@ -5,26 +5,26 @@
         <div class="bg-gray-200 rounded-lg shadow-sm p-6">
             <!-- Header Section -->
             <div class="border-b border-gray-200 pb-6 mb-6">
-                <h1 class="text-3xl font-bold text-gray-900">Mark Attendance</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Mark Attendance</h1>
                 <p class="mt-2 text-gray-600">{{ class_obj.name }} - {{ current_date|date:"F d, Y" }}</p>
             </div>
-
+    
             <!-- Quick Actions -->
-            <div class="flex space-x-4 mb-6">
+            <div class="flex flex-wrap gap-4 mb-6">
                 <button 
                     id="markAllPresent" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    class="px-4 py-2 text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                     Mark All Present
                 </button>
                 <button 
                     id="markAllAbsent" 
-                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    class="px-4 py-2 text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                     Mark All Absent
                 </button>
             </div>
-
+    
             <!-- Attendance Form -->
             <form method="POST" id="attendanceForm">
                 {% csrf_token %}
@@ -36,7 +36,7 @@
                             type="text" 
                             id="searchStudent" 
                             placeholder="Search students..." 
-                            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         >
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -45,31 +45,29 @@
                         </div>
                     </div>
                 </div>
-
+    
                 <!-- Students List -->
                 <div class="overflow-hidden bg-white shadow sm:rounded-md">
                     <ul class="divide-y divide-gray-200" id="studentsList">
                         {% for student in students %}
                         <li class="student-item hover:bg-gray-50">
-                            <div class="px-4 py-4 flex items-center justify-between">
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex-shrink-0">
-                                        <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                            <span class="text-gray-600 font-medium">
-                                                {{ student.user.username|slice:":2"|upper }}
-                                            </span>
-                                        </div>
+                            <div class="px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+                                <div class="flex items-center space-x-4 w-full sm:w-auto">
+                                    <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <span class="text-gray-600 font-medium">
+                                            {{ student.user.username|slice:":2"|upper }}
+                                        </span>
                                     </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-900 truncate">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">
                                             {{ student.user.username }}
                                         </p>
-                                        <p class="text-sm text-gray-500 truncate">
+                                        <p class="text-sm text-gray-500">
                                             Roll No: {{ student.roll_number }}
                                         </p>
                                     </div>
                                 </div>
-                                <div class="flex items-center">
+                                <div>
                                     <label class="flex items-center space-x-3 cursor-pointer">
                                         <input 
                                             type="checkbox" 
@@ -84,12 +82,12 @@
                         {% endfor %}
                     </ul>
                 </div>
-
+    
                 <!-- Submit Button -->
                 <div class="mt-6 flex justify-end">
                     <button 
                         type="submit" 
-                        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        class="px-6 py-3 text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         Submit Attendance
                     </button>
@@ -97,6 +95,7 @@
             </form>
         </div>
     </main>
+    
 
     <script>
         $(document).ready(function() {
