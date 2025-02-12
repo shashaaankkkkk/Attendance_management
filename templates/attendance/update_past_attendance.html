@@ -26,7 +26,7 @@
                 <tr>
                     <td>{{ student.user.first_name }}</td>
                     <td>
-                        <input type="checkbox" name="present_{{ student.user.id }}" {% if student.user.id in attendance_records and attendance_records.student.user.id %}checked{% endif %}>
+                        <input type="checkbox" name="present_{{ student.id }}" {% if student.id in attendance_records and attendance_records.student,.id %}checked{% endif %}>
                     </td>
                 </tr>
                 {% endfor %}

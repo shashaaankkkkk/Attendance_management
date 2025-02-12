@@ -320,9 +320,6 @@ def send_absence_notification(student, class_name, date):
 
 
 
-
-
-
 @login_required  
 def edit_student_profile(request):  
     student = request.user.student_profile  
