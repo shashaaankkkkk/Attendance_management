@@ -40,8 +40,11 @@ class Student(models.Model):
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records')
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField()  # Removed auto_now_add=True to allow manual updates
     present = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('student', 'class_name', 'date')  # Ensures no duplicate records
 
     def __str__(self):
         return f"{self.student.user.username} - {self.class_name.name} - {self.date}"
