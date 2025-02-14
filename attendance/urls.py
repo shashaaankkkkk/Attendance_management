@@ -17,4 +17,6 @@ urlpatterns = [
     path('change-password/', views.first_login_password_change, name='first_login_password_change'),
     path('fetch_attendance/<int:class_id>/', views.fetch_attendance, name='fetch_attendance'),
     path('class/<int:class_id>/', views.class_detail, name='class_detail'),
+    path('otp',views.verify_otp),
+    path("sucess",views.sucesssssss,name="sucess")
 ]

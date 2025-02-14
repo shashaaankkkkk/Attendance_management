@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-# User model for general information (role, username, etc.)
+
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('teacher', 'Teacher'),
@@ -9,25 +9,35 @@ class User(AbstractUser):
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     must_change_password = models.BooleanField(default=False)
-    
 
-# Teacher model that extends User model
+
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
-    bio = models.TextField(blank=True)  # You can add more teacher-specific fields here
-    
+    bio = models.TextField(blank=True)
+
     def __str__(self):
         return self.user.username
 
-# Class model, representing a class with many teachers and many students
-class Class(models.Model):
-    name = models.CharField(max_length=100)
-    teachers = models.ManyToManyField(Teacher, related_name='classes')
-    
+
+class Program(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    duration = models.CharField(max_length=50)  
+    start_date = models.DateField()
+    end_date = models.DateField()
+
     def __str__(self):
         return self.name
 
-# Student model, related to User model for the student-specific profile
+# Class model with Program association
+class Class(models.Model):
+    name = models.CharField(max_length=100)
+    teachers = models.ManyToManyField(Teacher, related_name='classes')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='classes')
+
+    def __str__(self):
+        return f"{self.name} - {self.program.name}"
+
+# Student model linked to classes and programs indirectly
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     roll_number = models.CharField(max_length=10, unique=True)
@@ -36,15 +46,15 @@ class Student(models.Model):
     def __str__(self):
         return self.user.username
 
-# Attendance model, to keep track of student attendance in various classes
+# Attendance model
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records')
-    date = models.DateField()  # Removed auto_now_add=True to allow manual updates
+    date = models.DateField()
     present = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('student', 'class_name', 'date')  # Ensures no duplicate records
+        unique_together = ('student', 'class_name', 'date')
 
     def __str__(self):
         return f"{self.student.user.username} - {self.class_name.name} - {self.date}"

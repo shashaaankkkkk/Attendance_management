@@ -1,9 +1,10 @@
 from datetime import date , timedelta
+import random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate ,logout
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
-from .forms import LoginForm, AttendanceForm , StudentProfileForm, UserProfileForm
+from .forms import LoginForm,verifyotp , AttendanceForm , StudentProfileForm, UserProfileForm
 import csv
 from django.contrib import messages
 from django.db import transaction
@@ -356,7 +357,7 @@ def student_profile(request):
 
 
 
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from .models import Attendance, Student, Class
 from datetime import datetime
@@ -503,3 +504,43 @@ def excel_attendance(request, class_id):
     }
     
     return render(request, 'attendance/excel_attendance.html', context)
+
+import random
+from django.shortcuts import render, redirect
+from django.core.mail import send_mail
+from django.conf import settings
+from .forms import verifyotp
+
+def verify_otp(request):
+    if request.method == "POST":
+        form = verifyotp(request.POST)
+        if form.is_valid():
+            stored_otp = request.session.get("otp")  # Retrieve OTP from session
+            if str(stored_otp) == str(form.cleaned_data["otp"]):
+                del request.session["otp"]  # OTP is used, remove from session
+                return redirect("sucess")  # Redirect to success page
+            else:
+                form.add_error("otp", "Invalid OTP")
+
+    else:
+        otp = random.randint(10000, 99999)
+        request.session["otp"] = otp  # Store OTP in session
+        request.session.set_expiry(300)  # OTP expires in 5 minutes
+
+        message = f"Your OTP is {otp}. It expires in 5 minutes."
+        send_mail(
+            subject="OTP Verification",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=["lavya203@gmail.com", "shashankshekhar8534@gmail.com"],
+            fail_silently=False,
+        )
+
+        form = verifyotp()
+
+    return render(request, "attendance/verifyotp.html", {"form": form})
+
+
+
+def sucesssssss(request):
+    return render(request,"attendance/sucess.html")
