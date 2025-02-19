@@ -1,10 +1,10 @@
-from datetime import date , timedelta
+
 import random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate ,logout,update_session_auth_hash
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
-from .forms import LoginForm,verifyotp , AttendanceForm , StudentProfileForm, UserProfileForm
+from .forms import LoginForm, VerifyOTPForm, AttendanceForm , StudentProfileForm, UserProfileForm
 import csv
 from django.contrib import messages
 from django.db import transaction
@@ -14,6 +14,12 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm
+from datetime import date, datetime, timedelta
+from calendar import monthrange
+
+from django.http import JsonResponse
+from .models import Class, Attendance, Student
+import json
 
 
 
@@ -48,7 +54,7 @@ def teacher_dashboard(request):
 def teacher_classes(request):
     """View function for the teacher's ERP dashboard."""
     if not hasattr(request.user, 'teacher_profile'):
-        return render(request, 'error.html', {'message': 'You are not authorized to access this page.'})
+        return render(request, 'attendance/error.html', {'message': 'You are not authorized to access this page.'})
 
     teacher = request.user.teacher_profile
     classes = teacher.classes.all()  # Get all classes assigned to the teacher
@@ -434,14 +440,6 @@ def change_password(request):
         form=PasswordChangeForm(user=request.user)
     return render(request,'attendance/change_pass.html',{'form':form})    
 
-from datetime import date, datetime, timedelta
-from calendar import monthrange
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
-from .models import Class, Attendance, Student
-import json
 
 @login_required
 def excel_attendance(request, class_id):
@@ -527,11 +525,11 @@ import random
 from django.shortcuts import render, redirect
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import verifyotp
+
 
 def verify_otp(request):
     if request.method == "POST":
-        form = verifyotp(request.POST)
+        form = VerifyOTPForm(request.POST)
         if form.is_valid():
             stored_otp = request.session.get("otp")  # Retrieve OTP from session
             if str(stored_otp) == str(form.cleaned_data["otp"]):
@@ -554,7 +552,7 @@ def verify_otp(request):
             fail_silently=False,
         )
 
-        form = verifyotp()
+        form = VerifyOTPForm()
 
     return render(request, "attendance/verifyotp.html", {"form": form})
 

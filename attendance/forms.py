@@ -1,8 +1,8 @@
 from django import forms
-from .models import Attendance
-from django.contrib.auth.forms import AuthenticationForm , PasswordChangeForm
-from django.contrib.auth import get_user_model  
-from .models import Student  
+from .models import Attendance, Student, Program
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth import get_user_model
+
 
 class AttendanceForm(forms.ModelForm):
     class Meta:
@@ -15,12 +15,12 @@ class LoginForm(AuthenticationForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput(attrs={'class': 'form-input'}))
 
 
-
 class BulkStudentUploadForm(forms.Form):
     csv_file = forms.FileField(
         label='Select CSV file',
         help_text='CSV should have columns: roll_number,email,first_name,last_name'
     )
+
 
 class FirstLoginPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
@@ -29,27 +29,32 @@ class FirstLoginPasswordChangeForm(PasswordChangeForm):
         del self.fields['old_password']
 
 
+User = get_user_model()
 
-User = get_user_model()  
 
-class StudentProfileForm(forms.ModelForm):  
-    class Meta:  
-        model = Student  
-        fields = ['classes']  
+class StudentProfileForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ['program']  # Now students belong to a program, not classes
 
-    def __init__(self, *args, **kwargs):  
-        super().__init__(*args, **kwargs)  
-        self.fields['classes'].widget.attrs.update({'class': 'w-full p-2 border rounded'})  
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['program'].widget.attrs.update({'class': 'w-full p-2 border rounded'})
 
-class UserProfileForm(forms.ModelForm):  
-    class Meta:  
-        model = User  
-        fields = ['first_name', 'last_name', 'email']  
 
-    def __init__(self, *args, **kwargs):  
-        super().__init__(*args, **kwargs)  
-        for field in self.fields.values():  
-            field.widget.attrs.update({'class': 'w-full p-2 border rounded'})  
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email']
 
-class verifyotp(forms.Form):
-    otp=forms.IntegerField(label="enter otp")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'w-full p-2 border rounded'})
+
+
+class VerifyOTPForm(forms.Form):
+    otp = forms.IntegerField(
+        label="Enter OTP",
+        widget=forms.NumberInput(attrs={'class': 'w-full p-2 border rounded', 'placeholder': 'Enter OTP'})
+    )

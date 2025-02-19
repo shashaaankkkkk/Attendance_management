@@ -28,25 +28,29 @@ class Program(models.Model):
     def __str__(self):
         return self.name
 
-# Class model with Program association
+
 class Class(models.Model):
     name = models.CharField(max_length=100)
     teachers = models.ManyToManyField(Teacher, related_name='classes')
     program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='classes')
 
+    @property
+    def students(self):
+        """Returns students belonging to this class's program"""
+        return Student.objects.filter(program=self.program)
+
     def __str__(self):
         return f"{self.name} - {self.program.name}"
 
-# Student model linked to classes and programs indirectly
+
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
-    roll_number = models.CharField(max_length=10, unique=True)
-    classes = models.ManyToManyField(Class, related_name='students')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='students')
 
     def __str__(self):
         return self.user.username
 
-# Attendance model
+
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records')
