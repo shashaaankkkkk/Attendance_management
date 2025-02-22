@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+
+    <div class="bg-white shadow-lg rounded-lg p-6 w-96">
+        <h2 class="text-2xl font-semibold text-gray-700 text-center mb-4">Generate Attendance</h2>
+        
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label for="id_date" class="block text-sm font-medium text-gray-600">Choose a date:</label>
+                {{ form.date }}
+            </div>
+
+            <div>
+                <label for="id_format" class="block text-sm font-medium text-gray-600">Select Format:</label>
+                {{ form.format }}
+            </div>
+
+            <button type="submit" 
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-all duration-200">
+                Export
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>
