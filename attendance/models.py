@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser 
 from django.db import models
 
 
@@ -6,6 +6,7 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('teacher', 'Teacher'),
         ('student', 'Student'),
+        ('admin','Admin'),
     )
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     must_change_password = models.BooleanField(default=False)
@@ -18,6 +19,12 @@ class Teacher(models.Model):
     def __str__(self):
         return self.user.username
 
+class Admin(models.Model):
+    user=models.OneToOneField(User,on_delete=models.CASCADE, related_name='admin_profile')
+    bio = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.user.username
 
 class Program(models.Model):
     name = models.CharField(max_length=100, unique=True)

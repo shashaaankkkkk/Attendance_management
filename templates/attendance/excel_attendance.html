@@ -6,86 +6,99 @@
     <title>{{ class_obj.name }} - Attendance Sheet</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"></script>
     <style>
+        body {
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            padding: 20px;
+        }
         .attendance-cell {
-            width: 40px;
-            height: 40px;
+            width: 60px;
+            height: 60px;
             text-align: center;
             cursor: pointer;
             user-select: none;
+            border: 1px solid #ccc;
+            transition: background 0.2s ease-in-out;
+            font-weight: bold;
         }
-        
         .attendance-cell.present {
-            background-color: #86efac;
+            background-color:rgb(73, 241, 135);
+            color: white;
         }
-        
         .attendance-cell.absent {
-            background-color: #fca5a5;
+            background-color:rgb(255, 104, 104);
+            color: white;
         }
-        
         .attendance-cell:hover {
             opacity: 0.8;
         }
-        
-        .sticky-header {
+        .sticky-header, .sticky-column {
             position: sticky;
-            top: 0;
-            background-color: white;
+            background-color:rgb(218, 220, 223);
             z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        
+        .sticky-header {
+            top: 0;
+        }
         .sticky-column {
-            position: sticky;
             left: 0;
-            background-color: white;
             z-index: 5;
+            font-weight: bold;
         }
-        
-        .selected {
-            border: 2px solid #3b82f6 !important;
-        }
-
         .table-container {
             overflow-x: auto;
             max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background: white;
+            padding: 15px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: auto;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background: #2563eb;
+            color: white;
+            font-size: 18px;
+        }
+        tr:nth-child(even) {
+            background-color: #f3f4f6;
+        }
+        tr:hover {
+            background-color: #e5e7eb;
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <div class="container-fluid px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">{{ class_obj.name }} - Attendance Sheet</h1>
-            
-            <div class="flex gap-4 items-center">
-                <a href="?year={{ prev_month|slice:'0:4' }}&month={{ prev_month|slice:'5:7' }}" 
-                   class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">←</a>
-                <span class="font-medium">{{ current_month }}</span>
-                <a href="?year={{ next_month|slice:'0:4' }}&month={{ next_month|slice:'5:7' }}" 
-                   class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300">→</a>
-            </div>
-        </div>
-
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="container mx-auto p-6">
         <div class="table-container">
-            <table class="border-collapse border border-gray-200" id="attendanceTable">
+            <table id="attendanceTable">
                 <thead>
                     <tr class="sticky-header">
-                        <th class="border p-2 sticky-column" style="min-width: 200px">Student Name</th>
-                        <th class="border p-2 sticky-column" style="min-width: 100px">Roll No</th>
+                        <th class="sticky-column">Student Name</th>
+                        <th class="sticky-column">Roll No</th>
                         {% for date in dates %}
-                        <th class="border p-2 attendance-cell">
-                            {{ date.day }}<br>
-                            <small>{{ date|date:"D" }}</small>
-                        </th>
+                        <th>{{ date.day }}<br><small>{{ date|date:"D" }}</small></th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for student_id, data in attendance_matrix.items %}
                     <tr>
-                        <td class="border p-2 sticky-column">{{ data.student_name }}</td>
-                        <td class="border p-2 sticky-column">{{ data.roll_number }}</td>
+                        <td class="sticky-column font-semibold">{{ data.student_name }}</td>
+                        <td class="sticky-column font-semibold">{{ data.roll_number }}</td>
                         {% for date in dates %}
                         {% with date_str=date|date:"Y-m-d" %}
-                        <td class="border attendance-cell {% if data.attendance|dictsort:date_str %}present{% else %}absent{% endif %}"
+                        <td class="attendance-cell {% if data.attendance|dictsort:date_str %}present{% else %}absent{% endif %}"
                             data-student="{{ student_id }}"
                             data-date="{{ date_str }}">
                             {% if data.attendance|dictsort:date_str %}P{% else %}A{% endif %}
@@ -97,164 +110,6 @@
                 </tbody>
             </table>
         </div>
-
-        <div class="mt-4 flex justify-between items-center">
-            <div class="flex gap-4 items-center">
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-green-300"></div>
-                    <span>Present</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 bg-red-300"></div>
-                    <span>Absent</span>
-                </div>
-            </div>
-            <button id="saveButton" 
-                    class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
-                Save Changes
-            </button>
-        </div>
     </div>
-
-    {% csrf_token %}
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        let changedAttendance = {};
-        let isMouseDown = false;
-        let startValue = null;
-        
-        const table = document.getElementById('attendanceTable');
-        
-        // Initialize attendance data from server
-        document.querySelectorAll('.attendance-cell[data-student]').forEach(cell => {
-            const studentId = cell.dataset.student;
-            const date = cell.dataset.date;
-            if (!changedAttendance[studentId]) {
-                changedAttendance[studentId] = {};
-            }
-            changedAttendance[studentId][date] = cell.classList.contains('present');
-        });
-        
-        // Handle single cell click
-        table.addEventListener('click', function(e) {
-            const cell = e.target.closest('.attendance-cell');
-            if (!cell || !cell.dataset.student) return;
-            
-            toggleAttendance(cell);
-        });
-        
-        // Handle drag selection
-        table.addEventListener('mousedown', function(e) {
-            const cell = e.target.closest('.attendance-cell');
-            if (!cell || !cell.dataset.student) return;
-            
-            isMouseDown = true;
-            startValue = cell.classList.contains('present');
-            
-            e.preventDefault();
-        });
-        
-        table.addEventListener('mouseover', function(e) {
-            if (!isMouseDown) return;
-            
-            const cell = e.target.closest('.attendance-cell');
-            if (!cell || !cell.dataset.student) return;
-            
-            setAttendance(cell, !startValue);
-        });
-        
-        document.addEventListener('mouseup', function() {
-            isMouseDown = false;
-        });
-        
-        function toggleAttendance(cell) {
-            const isPresent = cell.classList.contains('present');
-            setAttendance(cell, !isPresent);
-        }
-        
-        function setAttendance(cell, present) {
-            const studentId = cell.dataset.student;
-            const date = cell.dataset.date;
-            
-            cell.classList.toggle('present', present);
-            cell.classList.toggle('absent', !present);
-            cell.textContent = present ? 'P' : 'A';
-            
-            if (!changedAttendance[studentId]) {
-                changedAttendance[studentId] = {};
-            }
-            changedAttendance[studentId][date] = present;
-        }
-        
-        // Save changes
-        document.getElementById('saveButton').addEventListener('click', async function() {
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify({
-                        attendance: changedAttendance
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.status === 'success') {
-                    alert('Attendance saved successfully');
-                    changedAttendance = {};
-                } else {
-                    throw new Error(data.message);
-                }
-            } catch (error) {
-                alert('Error saving attendance: ' + error.message);
-            }
-        });
-        
-        // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
-            const selected = document.querySelector('.selected');
-            if (!selected) return;
-            
-            const row = selected.parentElement;
-            const cellIndex = Array.from(row.children).indexOf(selected);
-            const rowIndex = Array.from(row.parentElement.children).indexOf(row);
-            
-            switch(e.key) {
-                case 'ArrowUp':
-                    moveTo(rowIndex - 1, cellIndex);
-                    break;
-                case 'ArrowDown':
-                    moveTo(rowIndex + 1, cellIndex);
-                    break;
-                case 'ArrowLeft':
-                    moveTo(rowIndex, cellIndex - 1);
-                    break;
-                case 'ArrowRight':
-                    moveTo(rowIndex, cellIndex + 1);
-                    break;
-                case ' ':
-                    if (selected.classList.contains('attendance-cell')) {
-                        toggleAttendance(selected);
-                    }
-                    e.preventDefault();
-                    break;
-            }
-        });
-        
-        function moveTo(rowIndex, cellIndex) {
-            const rows = table.querySelectorAll('tbody tr');
-            if (rowIndex < 0 || rowIndex >= rows.length) return;
-            
-            const cells = rows[rowIndex].children;
-            if (cellIndex < 0 || cellIndex >= cells.length) return;
-            
-            document.querySelector('.selected')?.classList.remove('selected');
-            cells[cellIndex].classList.add('selected');
-        }
-    });
-    </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ from django.contrib.auth import login, authenticate ,logout,update_session_auth_
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
 from .forms import LoginForm, VerifyOTPForm, AttendanceForm , StudentProfileForm, UserProfileForm
+from .forms import LoginForm,verifyotp , AttendanceForm , StudentProfileForm, UserProfileForm ,ProgramForm
 import csv
 from django.contrib import messages
 from django.db import transaction
@@ -440,6 +441,14 @@ def change_password(request):
         form=PasswordChangeForm(user=request.user)
     return render(request,'attendance/change_pass.html',{'form':form})    
 
+from datetime import date, datetime, timedelta
+from calendar import monthrange
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from .models import Class, Attendance, Student ,Program ,Teacher
+import json
 
 @login_required
 def excel_attendance(request, class_id):
@@ -560,3 +569,94 @@ def verify_otp(request):
 
 def sucesssssss(request):
     return render(request,"attendance/sucess.html")
+from .forms import ExportAttendanceForm
+from .models import Attendance
+import csv
+import datetime
+from django.http import HttpResponse
+
+def export_attendance(request):
+    if request.method=="POST":
+        form = ExportAttendanceForm(request.POST)
+        if form.is_valid():
+            date = form.cleaned_data['date']
+            export_format = form.cleaned_data['format']
+            attendance_records = Attendance.objects.filter(date=date)
+
+            if export_format == 'csv':
+                return export_as_csv(attendance_records)
+            elif export_format == 'excel':
+                return export_as_excel(attendance_records)
+            elif export_format == 'pdf':
+                return export_as_pdf(attendance_records)
+
+    else:
+        form = ExportAttendanceForm()
+
+    return render(request, 'attendance/generate_att.html', {'form': form})
+import csv
+from django.http import HttpResponse
+
+def export_as_csv(attendance_records):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="attendance.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Student', 'Status'])  
+
+    for record in attendance_records:
+        writer.writerow([
+            record.date,
+            record.student,
+            'Present' if record.present else 'Absent'
+        ])
+
+    return response    
+
+def admin_dashboard(request):
+    total_students = Student.objects.count()
+    total_programs = Program.objects.count()
+    total_teachers = Teacher.objects.count()
+    context = {
+        'total_students': total_students,
+        'total_programs': total_programs,
+        'total_teachers': total_teachers,
+    }
+
+
+   
+    return render(request , 'attendance/admin_dashboard.html',context)
+
+
+from django.shortcuts import render, redirect
+from .models import Program
+from .forms import ProgramForm
+
+def programs(request):
+    total_programs = Program.objects.count()
+    all_programs = Program.objects.all().order_by('name') if total_programs else []
+    
+    if request.method == 'POST':
+        form = ProgramForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('program')  
+    else:
+        form = ProgramForm()
+
+    context = {
+        'total_programs': total_programs,
+        'all_programs': all_programs,
+        'form': form,
+    }
+    
+    return render(request, 'attendance/program.html', context)
+
+def teachers(request):
+    total_teachers = Teacher.objects.count()
+    context = {
+        'total_teachers':total_teachers,
+     }
+    return render(request,'attendance/admin_teachers.html',context)       
+def attendance_policy(request):
+    return render(request,'attendance/attendance_policy.txt')       

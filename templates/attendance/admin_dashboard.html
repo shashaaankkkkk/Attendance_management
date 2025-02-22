@@ -1,0 +1,74 @@
+{% extends 'attendance/admin_base.html' %}
+
+{% block content %}
+
+<main class="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div class="container mx-auto p-6">
+
+        <!-- Welcome Section -->
+        <div class="fade-in">
+            <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 mb-8 text-center sm:text-left">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+                    Welcome back, <span class="text-blue-600">{{ user.username }}</span>
+                </h1>
+                <p class="text-lg text-gray-600 mt-2">Admin Dashboard</p>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Students Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center">
+                <div class="p-4 bg-blue-100 rounded-full">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M5.121 17.804A9.004 9.004 0 0112 15c2.5 0 4.773.978 6.879 2.804M15 11a3 3 0 11-6 0 3 3 0 016 0z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-xl font-semibold text-gray-800">{{ total_students }}</p>
+                    <p class="text-gray-600">Total Students</p>
+                </div>
+            </div>
+
+            <!-- Programs Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center">
+                <div class="p-4 bg-green-100 rounded-full">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m0-6l-9-5m9 5l9-5">
+                        </path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-xl font-semibold text-gray-800">{{ total_programs }}</p>
+                    <p class="text-gray-600">Total Programs</p>
+                </div>
+            </div>
+
+            <!-- Teachers Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center">
+                <div class="p-4 bg-red-100 rounded-full">
+                    <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" stroke-width="2"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M16 7a4 4 0 01-8 0m-4 6a8 8 0 0116 0v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4z">
+                        </path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-xl font-semibold text-gray-800">{{ total_teachers }}</p>
+                    <p class="text-gray-600">Total Teachers</p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</main>
+
+{% endblock %}

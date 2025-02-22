@@ -1,0 +1,52 @@
+{% extends 'attendance/admin_base.html' %}
+
+{% block content %}
+<main class="container mx-auto py-10 px-6">
+    <div class="bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-3xl font-bold text-gray-800">Programs Overview</h1>
+        <p class="text-gray-600 mt-2">Total Programs: <span class="text-blue-600 font-semibold">{{ total_programs }}</span></p>
+    </div>
+
+    <div class="bg-gray-100 shadow-lg rounded-lg p-6 mt-6">
+        <h2 class="text-2xl font-semibold text-gray-700">Add a New Program</h2>
+        <form method="POST" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium">Program Name</label>
+                {{ form.name }}
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium">Start Date</label>
+                {{ form.start_date }}
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium">End Date</label>
+                {{ form.end_date }}
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow">
+                Add Program
+            </button>
+        </form>
+    </div>
+
+    <div class="mt-6">
+        <h2 class="text-2xl font-semibold text-gray-700">Available Programs</h2>
+
+        {% if all_programs %}
+            <ul class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                {% for program in all_programs %}
+                    <li class="bg-gray-100 p-4 rounded-md shadow">
+                        <h3 class="text-lg font-semibold text-gray-700">{{ program.name }}</h3>
+                        <p class="text-sm text-gray-500">Start Date: {{ program.start_date }}</p>
+                        <p class="text-sm text-gray-500">End Date: {{ program.end_date|default:"Not specified" }}</p>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-500 mt-4">No programs available at the moment.</p>
+        {% endif %}
+    </div>
+</main>
+
+
+{% endblock %}

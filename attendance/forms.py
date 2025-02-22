@@ -3,6 +3,10 @@ from .models import Attendance, Student, Program
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import get_user_model
 
+from .models import Attendance
+from django.contrib.auth.forms import AuthenticationForm , PasswordChangeForm
+from django.contrib.auth import get_user_model  
+from .models import Student  , Program
 
 class AttendanceForm(forms.ModelForm):
     class Meta:
@@ -58,3 +62,25 @@ class VerifyOTPForm(forms.Form):
         label="Enter OTP",
         widget=forms.NumberInput(attrs={'class': 'w-full p-2 border rounded', 'placeholder': 'Enter OTP'})
     )
+class verifyotp(forms.Form):
+    otp=forms.IntegerField(label="enter otp")
+
+EXPORT_FORMAT_CHOICES = [
+    ('csv', 'CSV'),
+    ('pdf', 'PDF'),
+]
+
+class ExportAttendanceForm(forms.Form):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    format = forms.ChoiceField(choices=EXPORT_FORMAT_CHOICES)    
+
+class ProgramForm(forms.ModelForm):
+    class Meta:
+        model = Program
+        fields = ['name','start_date', 'end_date']  
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-input border-gray-300 rounded-md p-2 w-full'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-input border-gray-300 rounded-md p-2 w-full', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-input border-gray-300 rounded-md p-2 w-full', 'type': 'date'}),
+
+        }
