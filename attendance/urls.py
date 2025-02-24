@@ -21,8 +21,8 @@ urlpatterns = [
     path("sucess",views.sucesssssss,name="sucess"),
     path('generate-attendance', views.export_attendance, name='generate_attendance'),
     path('change_your_password', views.change_password, name='change_pass'),
-    path('admin_dashboard', views.admin_dashboard, name='admin_dashboard'),
-    path('admin_dashboard/program',views.programs,name='program'),
-    path('admin_dashboard/teachers',views.teachers,name='teachers'),
-    path('admin_dashboard/attendance_policy',views.attendance_policy,name='attendance_policy')
+    path('admin-dashboard', views.admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/program',views.programs,name='program'),
+    path('admin-dashboard/teachers',views.teachers,name='teachers'),
+    path('admin-dashboard/attendance_policy',views.attendance_policy,name='attendance_policy')
 ]
