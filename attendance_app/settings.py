@@ -143,3 +143,7 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", default="")
 INSTALLED_APPS += ['corsheaders']
 MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 CORS_ALLOW_ALL_ORIGINS = True  # Allow all requests (for development)
+CSRF_TRUSTED_ORIGINS = [
+    "https://gbuattendance.tilchattaas.com"
+]
+

@@ -55,12 +55,12 @@
                                 <div class="flex items-center space-x-4 w-full sm:w-auto">
                                     <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                                         <span class="text-gray-600 font-medium">
-                                            {{ student.user.username|slice:":2"|upper }}
+                                            {{ student.user.username|slice:"-2:" }}
                                         </span>
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-900">
-                                            {{ student.user.username }}
+                                            {{ student.user.first_name }}
                                         </p>
                                         <p class="text-sm text-gray-500">
                                             Roll No: {{ student.roll_number }}
