@@ -24,5 +24,8 @@ urlpatterns = [
     path('admin-dashboard', views.admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/program',views.programs,name='program'),
     path('admin-dashboard/teachers',views.teachers,name='teachers'),
-    path('admin-dashboard/attendance_policy',views.attendance_policy,name='attendance_policy')
+    path('admin-dashboard/attendance_policy',views.attendance_policy,name='attendance_policy'),
+    path("admin-dashboard/add-teacher/", views.add_teacher_view, name="add_teacher"),
+    path('admin-dashboard/classes/', views.class_list, name='class_list'),
+    path('admin-dashboard/classes/create/', views.create_class, name='create_class'),
 ]

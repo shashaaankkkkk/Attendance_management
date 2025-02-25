@@ -4,8 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate ,logout,update_session_auth_hash
 from django.contrib.auth.decorators import login_required , user_passes_test
 from .models import Class, Student, Attendance , User
-from .forms import LoginForm, VerifyOTPForm, AttendanceForm , StudentProfileForm, UserProfileForm
-from .forms import LoginForm,verifyotp , AttendanceForm , StudentProfileForm, UserProfileForm ,ProgramForm
+from .forms import LoginForm, VerifyOTPForm, AttendanceForm , StudentProfileForm, UserProfileForm , ProgramForm , ClassForm
 import csv
 from django.contrib import messages
 from django.db import transaction
@@ -25,7 +24,6 @@ import json
 
 
 
-
 def user_login(request):
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
@@ -33,12 +31,25 @@ def user_login(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(request, username=username, password=password)
+            
             if user:
                 login(request, user)
-                return redirect('teacher_dashboard' if user.role == 'teacher' else 'student_dashboard')
+                
+
+                if user.role == 'teacher':
+                    return redirect('teacher_dashboard')
+                elif user.role == 'admin':
+                    return redirect('admin_dashboard')
+                elif user.role == 'student':
+                    return redirect('student_dashboard')
+                
+                return redirect('home')  
+
     else:
         form = LoginForm()
+    
     return render(request, 'attendance/login.html', {'form': form})
+
 def user_logout(request):
    if request.method == "POST":  
         logout(request)
@@ -653,10 +664,52 @@ def programs(request):
     return render(request, 'attendance/program.html', context)
 
 def teachers(request):
-    total_teachers = Teacher.objects.count()
+    all_teachers = Teacher.objects.all()  # Fetch all teachers
+    total_teachers = all_teachers.count()
+    
     context = {
-        'total_teachers':total_teachers,
-     }
-    return render(request,'attendance/admin_teachers.html',context)       
+        'total_teachers': total_teachers,
+        'teachers': all_teachers,  # Pass all teacher records
+    }
+    return render(request,'attendance/admin_teachers.html',context)
+       
 def attendance_policy(request):
     return render(request,'attendance/attendance_policy.txt')       
+
+def add_teacher_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        bio = request.POST.get("bio", "")
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists!")
+        else:
+            user = User.objects.create_user(username=username, email=email, password=password, role="teacher")
+            Teacher.objects.create(user=user, bio=bio)
+            messages.success(request, "Teacher added successfully!")
+            return redirect("add_teacher")  # Redirect to the same form
+        
+    return render(request, "attendance/add_teacher.html")
+
+
+def class_list(request):
+    classes = Class.objects.select_related('program').prefetch_related('teachers')
+    
+    context = {
+        'classes': classes
+    }
+    return render(request, 'attendance/admin_classes.html', context)
+
+def create_class(request):
+    if request.method == "POST":
+        form = ClassForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('class_list')  # Redirect to class list after creation
+    else:
+        form = ClassForm()
+    
+    context = {'form': form}
+    return render(request, 'attendance/create_class.html', context)
