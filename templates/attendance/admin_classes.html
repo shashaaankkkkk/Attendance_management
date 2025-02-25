@@ -1,0 +1,50 @@
+{% extends 'attendance/admin_base.html' %}
+
+{% block content %}
+<div class="bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Class Management</h2>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                    <th class="px-4 py-2 border">ID</th>
+                    <th class="px-4 py-2 border">Class Name</th>
+                    <th class="px-4 py-2 border">Program</th>
+                    <th class="px-4 py-2 border">Teachers</th>
+                    <th class="px-4 py-2 border">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for class in classes %}
+                <tr class="text-center hover:bg-gray-100">
+                    <td class="px-4 py-2 border">{{ class.id }}</td>
+                    <td class="px-4 py-2 border">{{ class.name }}</td>
+                    <td class="px-4 py-2 border">{{ class.program.name }}</td>
+                    <td class="px-4 py-2 border">
+                        {% for teacher in class.teachers.all %}
+                            {{ teacher.user.first_name }} {{ teacher.user.last_name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td class="px-4 py-2 border">
+                        <a href="" class="text-blue-500 hover:underline">Edit</a> |
+                        <a href="" class="text-red-500 hover:underline">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-2 text-gray-500 text-center">No classes found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'create_class' %}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            + Create Class
+        </a>
+    </div>
+</div>
+{% endblock %}
+

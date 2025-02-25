@@ -1,5 +1,5 @@
 from django import forms
-from .models import Attendance, Student, Program
+from .models import Attendance, Student, Program , Teacher , Class
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import get_user_model
 
@@ -84,3 +84,15 @@ class ProgramForm(forms.ModelForm):
             'end_date': forms.DateInput(attrs={'class': 'form-input border-gray-300 rounded-md p-2 w-full', 'type': 'date'}),
 
         }
+
+
+
+class ClassForm(forms.ModelForm):
+    teachers = forms.ModelMultipleChoiceField(
+        queryset=Teacher.objects.select_related('user'),
+        widget=forms.CheckboxSelectMultiple,  
+    )
+    
+    class Meta:
+        model = Class
+        fields = ['name', 'teachers', 'program']

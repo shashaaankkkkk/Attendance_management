@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser 
+
 from django.db import models
 
 
@@ -69,3 +70,4 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.student.user.username} - {self.class_name.name} - {self.date}"
+

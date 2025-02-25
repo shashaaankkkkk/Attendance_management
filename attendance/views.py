@@ -1,29 +1,30 @@
-
+# Standard library imports
 import random
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate ,logout,update_session_auth_hash
-from django.contrib.auth.decorators import login_required , user_passes_test
-from .models import Class, Student, Attendance , User
-from .forms import LoginForm, VerifyOTPForm, AttendanceForm , StudentProfileForm, UserProfileForm
-from .forms import LoginForm,verifyotp , AttendanceForm , StudentProfileForm, UserProfileForm ,ProgramForm
 import csv
+import json
+from datetime import date, datetime, timedelta
+from calendar import monthrange
+
+# Django imports
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db import transaction
 from django.urls import reverse
-from .forms import BulkStudentUploadForm, FirstLoginPasswordChangeForm
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth.forms import PasswordChangeForm
-from datetime import date, datetime, timedelta
-from calendar import monthrange
+from django.http import HttpResponse, JsonResponse
 
-from django.http import JsonResponse
-from .models import Class, Attendance, Student
-import json
-
-
-
+# Local imports
+from .models import Class, Student, Attendance, User, Program, Teacher
+from .forms import (
+    LoginForm, VerifyOTPForm, AttendanceForm, StudentProfileForm, 
+    UserProfileForm, ProgramForm, ClassForm, BulkStudentUploadForm, 
+    FirstLoginPasswordChangeForm, ExportAttendanceForm
+)
 
 
 def user_login(request):
@@ -33,18 +34,32 @@ def user_login(request):
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(request, username=username, password=password)
+            
             if user:
                 login(request, user)
-                return redirect('teacher_dashboard' if user.role == 'teacher' else 'student_dashboard')
+                
+                if user.role == 'teacher':
+                    return redirect('teacher_dashboard')
+                elif user.role == 'admin':
+                    return redirect('admin_dashboard')
+                elif user.role == 'student':
+                    return redirect('student_dashboard')
+                
+                return redirect('home')  
+
     else:
         form = LoginForm()
+    
     return render(request, 'attendance/login.html', {'form': form})
+
+
 def user_logout(request):
    if request.method == "POST":  
         logout(request)
         return redirect('login') 
     
    return render(request, 'attendance/logout_confirmation.html')
+
 
 @login_required(login_url="login")
 def teacher_dashboard(request):
@@ -80,6 +95,7 @@ def teacher_classes(request):
         'class_data': class_data
     }
     return render(request, 'attendance/teacher_classes.html', context)
+
 
 @login_required
 def mark_attendance(request, class_id):
@@ -133,6 +149,7 @@ def mark_attendance(request, class_id):
         'today': today,
         'attendance_status': attendance_status
     })
+
 
 @login_required
 def student_dashboard(request):
@@ -208,6 +225,8 @@ def show_attendance(request, class_id):
 
 def password_change_required(user):
     return not user.must_change_password
+
+
 @login_required
 def first_login_password_change(request):
     if not request.user.must_change_password:
@@ -226,20 +245,18 @@ def first_login_password_change(request):
 
     return render(request, 'attendance/first_login_password_change.html', {'form': form})
 
+
 @login_required
 @user_passes_test(lambda u: u.role == 'teacher')
 def bulk_student_upload(request, class_id):
-    try:
-        class_obj = Class.objects.get(id=class_id)
-    except Class.DoesNotExist:
-        messages.error(request, "Class not found")
-        return redirect('class_list')
+    class_obj = get_object_or_404(Class, id=class_id)
+    program = class_obj.program  # Get the program for this class
 
     if request.method == 'POST':
         form = BulkStudentUploadForm(request.POST, request.FILES)
         if form.is_valid():
             csv_file = request.FILES['csv_file']
-            
+
             if not csv_file.name.endswith('.csv'):
                 messages.error(request, 'Please upload a CSV file')
                 return redirect('bulk_student_upload', class_id=class_id)
@@ -247,39 +264,37 @@ def bulk_student_upload(request, class_id):
             try:
                 decoded_file = csv_file.read().decode('utf-8').splitlines()
                 csv_reader = csv.DictReader(decoded_file)
-                
-                for row in csv_reader:
-                    with transaction.atomic():
+
+                with transaction.atomic():
+                    for row in csv_reader:
                         roll_number = row['roll_number'].strip()
-                        
-                        # Use roll number as username
+                        email = row.get('email', '').strip()
+                        first_name = row.get('first_name', '').strip()
+
+                        # Create or get user
                         user, user_created = User.objects.get_or_create(
                             username=roll_number,
                             defaults={
-                                'email': row['email'],
-                                'first_name': row['first_name'],
-
+                                'email': email,
+                                'first_name': first_name,
                                 'role': 'student',
                                 'must_change_password': True
                             }
                         )
 
                         if user_created:
-                            # Set roll number as initial password
-                            user.set_password(roll_number)
+                            user.set_password(roll_number)  # Set roll number as initial password
                             user.save()
 
                         # Create or get student profile
                         student, student_created = Student.objects.get_or_create(
                             user=user,
-                            defaults={
-                                'roll_number': roll_number
-                            }
+                            program=program  # Ensure student is assigned to the correct program
                         )
 
                         # Add student to class if not already added
-                        if class_obj not in student.classes.all():
-                            student.classes.add(class_obj)
+                        if class_obj not in student.program.classes.all():
+                            class_obj.students.add(student)
 
                 messages.success(request, 'Students have been successfully uploaded and added to the class')
                 return redirect('mark_attendance', class_id=class_id)
@@ -287,6 +302,7 @@ def bulk_student_upload(request, class_id):
             except Exception as e:
                 messages.error(request, f'Error processing CSV file: {str(e)}')
                 return redirect('bulk_student_upload', class_id=class_id)
+
     else:
         form = BulkStudentUploadForm()
 
@@ -294,6 +310,7 @@ def bulk_student_upload(request, class_id):
         'form': form,
         'class_obj': class_obj
     })
+
 
 def send_absence_notification(student, class_name, date):
     """
@@ -326,7 +343,6 @@ def send_absence_notification(student, class_name, date):
     except Exception as e:
         print(f"Failed to send email to {student.user.email}: {str(e)}")
         return False
-
 
 
 @login_required  
@@ -364,12 +380,6 @@ def student_profile(request):
     return render(request, 'attendance/student_profile.html', {'student': student})
 
 
-
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
-from .models import Attendance, Student, Class
-from datetime import datetime
-
 def fetch_attendance(request, class_id):
     selected_date = request.GET.get('date', None)
 
@@ -395,24 +405,25 @@ def fetch_attendance(request, class_id):
     return JsonResponse({'error': 'Date not provided'}, status=400)
 
 
-
 @login_required
 def class_detail(request, class_id):
-    class_obj = Class.objects.get(id=class_id)
-    students = Student.objects.filter(classes=class_obj)
+    class_obj = get_object_or_404(Class, id=class_id)
+    
+    # Fetch students in the class via program
+    students = Student.objects.filter(program=class_obj.program)
     
     # Get attendance data for the last 7 days
-    dates = [(datetime.today() - timedelta(days=i)).date() for i in range(7)]
+    dates = [(datetime.now() - timedelta(days=i)).date() for i in range(7)]
     attendance_data = []
     
-    for date in dates:
+    for attendance_date in dates:  # Avoid using 'date' as a variable name
         present_count = Attendance.objects.filter(
             class_name=class_obj,
-            date=date,
+            date=attendance_date,
             present=True
         ).count()
         attendance_data.append({
-            'date': date.strftime('%d %b'),
+            'date': attendance_date.strftime('%d %b'),
             'present': present_count,
             'total': students.count()
         })
@@ -423,6 +434,8 @@ def class_detail(request, class_id):
         'attendance_data': attendance_data
     }
     return render(request, 'attendance/class_detail.html', context)
+
+
 @login_required
 def change_password(request):
     if request.method == "POST":
@@ -441,14 +454,6 @@ def change_password(request):
         form=PasswordChangeForm(user=request.user)
     return render(request,'attendance/change_pass.html',{'form':form})    
 
-from datetime import date, datetime, timedelta
-from calendar import monthrange
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
-from .models import Class, Attendance, Student ,Program ,Teacher
-import json
 
 @login_required
 def excel_attendance(request, class_id):
@@ -530,11 +535,6 @@ def excel_attendance(request, class_id):
     
     return render(request, 'attendance/excel_attendance.html', context)
 
-import random
-from django.shortcuts import render, redirect
-from django.core.mail import send_mail
-from django.conf import settings
-
 
 def verify_otp(request):
     if request.method == "POST":
@@ -566,14 +566,9 @@ def verify_otp(request):
     return render(request, "attendance/verifyotp.html", {"form": form})
 
 
-
 def sucesssssss(request):
     return render(request,"attendance/sucess.html")
-from .forms import ExportAttendanceForm
-from .models import Attendance
-import csv
-import datetime
-from django.http import HttpResponse
+
 
 def export_attendance(request):
     if request.method=="POST":
@@ -594,8 +589,7 @@ def export_attendance(request):
         form = ExportAttendanceForm()
 
     return render(request, 'attendance/generate_att.html', {'form': form})
-import csv
-from django.http import HttpResponse
+
 
 def export_as_csv(attendance_records):
     response = HttpResponse(content_type='text/csv')
@@ -613,6 +607,7 @@ def export_as_csv(attendance_records):
 
     return response    
 
+
 def admin_dashboard(request):
     total_students = Student.objects.count()
     total_programs = Program.objects.count()
@@ -622,15 +617,9 @@ def admin_dashboard(request):
         'total_programs': total_programs,
         'total_teachers': total_teachers,
     }
-
-
    
-    return render(request , 'attendance/admin_dashboard.html',context)
+    return render(request, 'attendance/admin_dashboard.html', context)
 
-
-from django.shortcuts import render, redirect
-from .models import Program
-from .forms import ProgramForm
 
 def programs(request):
     total_programs = Program.objects.count()
@@ -652,11 +641,57 @@ def programs(request):
     
     return render(request, 'attendance/program.html', context)
 
+
 def teachers(request):
-    total_teachers = Teacher.objects.count()
+    all_teachers = Teacher.objects.all()  # Fetch all teachers
+    total_teachers = all_teachers.count()
+    
     context = {
-        'total_teachers':total_teachers,
-     }
-    return render(request,'attendance/admin_teachers.html',context)       
+        'total_teachers': total_teachers,
+        'teachers': all_teachers,  # Pass all teacher records
+    }
+    return render(request, 'attendance/admin_teachers.html', context)
+       
+
 def attendance_policy(request):
-    return render(request,'attendance/attendance_policy.txt')       
+    return render(request, 'attendance/attendance_policy.txt')       
+
+
+def add_teacher_view(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        bio = request.POST.get("bio", "")
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists!")
+        else:
+            user = User.objects.create_user(username=username, email=email, password=password, role="teacher")
+            Teacher.objects.create(user=user, bio=bio)
+            messages.success(request, "Teacher added successfully!")
+            return redirect("add_teacher")  # Redirect to the same form
+        
+    return render(request, "attendance/add_teacher.html")
+
+
+def class_list(request):
+    classes = Class.objects.select_related('program').prefetch_related('teachers')
+    
+    context = {
+        'classes': classes
+    }
+    return render(request, 'attendance/admin_classes.html', context)
+
+
+def create_class(request):
+    if request.method == "POST":
+        form = ClassForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('class_list')  # Redirect to class list after creation
+    else:
+        form = ClassForm()
+    
+    context = {'form': form}
+    return render(request, 'attendance/create_class.html', context)
