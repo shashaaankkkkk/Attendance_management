@@ -90,7 +90,7 @@ class ProgramForm(forms.ModelForm):
 class ClassForm(forms.ModelForm):
     teachers = forms.ModelMultipleChoiceField(
         queryset=Teacher.objects.select_related('user'),
-        widget=forms.CheckboxSelectMultiple,  # Allows selecting multiple teachers
+        widget=forms.CheckboxSelectMultiple,  
     )
     
     class Meta:
