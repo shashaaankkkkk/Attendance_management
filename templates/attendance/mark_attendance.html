@@ -44,34 +44,26 @@
                         </svg>
                     </div>
                 </div>
-    
-                <!-- Students List -->
-                <div class="overflow-hidden bg-white shadow sm:rounded-md">
-                    <ul class="divide-y divide-gray-200" id="studentsList">
-                        {% for student in students %}
-                        <li class="student-item hover:bg-gray-50">
-                            <div class="px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
-                                <div class="flex items-center space-x-4 w-full sm:w-auto">
-                                    <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                        <span class="text-gray-600 font-medium">
-                                            {{ student.user.username|slice:"-2:" }}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900">
-                                            {{ student.user.first_name }}
-                                        </p>
-                                        <p class="text-sm text-gray-500">
-                                            Roll No: {{ student.roll_number }}
-                                        </p>
-                                    </div>
+            </div>
+
+            <!-- Students List -->
+            <div class="overflow-hidden bg-white shadow sm:rounded-md">
+                <ul class="divide-y divide-gray-200" id="studentsList">
+                    {% for student in students %}
+                    <li class="student-item hover:bg-gray-50">
+                        <div class="px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+                            <div class="flex items-center space-x-4 w-full sm:w-auto">
+                                <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                    <span class="text-gray-600 font-medium">
+                                        {{ student.user.username|slice:"-3:" }}
+                                    </span>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">
-                                        {{ student.user.username }}
+                                        {{ student.user.first_name }}
                                     </p>
                                     <p class="text-sm text-gray-500">
-                                        Roll No: {{ student.roll_number }}
+                                        Roll No: {{ student.user.username }}
                                     </p>
                                 </div>
                             </div>
