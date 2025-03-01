@@ -132,12 +132,12 @@ AUTH_USER_MODEL = 'attendance.User'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv("EMAIL_HOST", default="") # Or your email provider's SMTP server
+EMAIL_HOST = os.getenv("EMAIL_HOST", default="smtp.gmail.com") # Or your email provider's SMTP server
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", default="")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", default="attendancegbu@gmail.com")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", default="gjfy aprt rugj oyfu")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", default="attendancegbu@gmail.com")
 
 
 INSTALLED_APPS += ['corsheaders']
