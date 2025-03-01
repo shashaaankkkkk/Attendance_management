@@ -45,7 +45,7 @@ def user_login(request):
                 elif user.role == 'student':
                     return redirect('student_dashboard')
                 
-                return redirect('home')  
+                return redirect('')  
 
     else:
         form = LoginForm()
