@@ -65,14 +65,56 @@ class VerifyOTPForm(forms.Form):
 class verifyotp(forms.Form):
     otp=forms.IntegerField(label="enter otp")
 
-EXPORT_FORMAT_CHOICES = [
-    ('csv', 'CSV'),
-    ('pdf', 'PDF'),
-]
+from django import forms
 
 class ExportAttendanceForm(forms.Form):
-    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
-    format = forms.ChoiceField(choices=EXPORT_FORMAT_CHOICES)    
+    REPORT_CHOICES = [
+        ('daily', 'Daily'),
+        ('monthly_range', 'Monthly (Date Range)'),
+        ('monthly_whole', 'Monthly (Whole Month)'),
+    ]
+    
+    FORMAT_CHOICES = [
+        ('csv', 'CSV'),
+        ('tsv', 'TSV'),
+        ('txt', 'Text'),
+    ]
+
+    report_type = forms.ChoiceField(
+        choices=REPORT_CHOICES, 
+        widget=forms.Select(attrs={'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
+
+    date = forms.DateField(
+        required=False, 
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
+
+    from_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
+
+    to_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
+
+    month = forms.ChoiceField(
+        choices=[(str(i), str(i)) for i in range(1, 13)],
+        required=False,
+        widget=forms.Select(attrs={'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
+
+    year = forms.IntegerField(
+        required=False, 
+        widget=forms.NumberInput(attrs={'class': 'w-full mt-1 p-2 border rounded-md', 'min': '2000', 'max': '2100'})
+    )
+
+    format = forms.ChoiceField(
+        choices=FORMAT_CHOICES,
+        widget=forms.Select(attrs={'class': 'w-full mt-1 p-2 border rounded-md'})
+    )
 
 class ProgramForm(forms.ModelForm):
     class Meta:

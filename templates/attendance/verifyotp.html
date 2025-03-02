@@ -3,15 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Verify OTP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h2>Verify OTP</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Submit</button>
-    </form>
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+    
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center text-gray-700 mb-4">Verify OTP</h2>
+        <p class="text-gray-500 text-center mb-6">Enter the 6-digit OTP sent to your email/phone.</p>
+
+        <form method="POST" class="flex flex-col space-y-4">
+            {% csrf_token %}
+
+            <!-- OTP Inputs -->
+            <div class="flex justify-center space-x-2">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                <input type="text" maxlength="1" class="otp-box w-12 h-12 text-center text-lg border border-gray-300 rounded focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+            </div>
+
+            <!-- Submit Button -->
+            <a href="{% url 'change_pass' %}" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4 text-center block">
+                Verify OTP
+            </a>
+            
+
+            <!-- Resend OTP -->
+            <p class="text-center text-gray-500 text-sm">
+                Didn't receive the OTP? 
+                <a href="{% url 'otp'%}" class="text-blue-500 hover:underline">Resend</a>
+            </p>
+        </form>
+    </div>
+
+    <!-- JavaScript for OTP Auto-focus -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const inputs = document.querySelectorAll(".otp-box");
+
+            inputs.forEach((input, index) => {
+                input.addEventListener("input", () => {
+                    if (input.value.length === 1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener("keydown", (event) => {
+                    if (event.key === "Backspace" && index > 0 && !input.value) {
+                        inputs[index - 1].focus();
+                    }
+                });
+            });
+        });
+    </script>
 
 </body>
 </html>
