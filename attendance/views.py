@@ -548,7 +548,7 @@ def verify_otp(request):
                 form.add_error("otp", "Invalid OTP")
 
     else:
-        otp = random.randint(10000, 99999)
+        otp = random.randint(100000, 999999)
         request.session["otp"] = otp  # Store OTP in session
         request.session.set_expiry(300)  # OTP expires in 5 minutes
 
@@ -568,45 +568,70 @@ def verify_otp(request):
 
 def sucesssssss(request):
     return render(request,"attendance/sucess.html")
-
+from django.shortcuts import render
+from django.http import HttpResponse
+from .forms import ExportAttendanceForm
+from .models import Attendance
+import csv
 
 def export_attendance(request):
-    if request.method=="POST":
+    if request.method == "POST":
         form = ExportAttendanceForm(request.POST)
         if form.is_valid():
-            date = form.cleaned_data['date']
-            export_format = form.cleaned_data['format']
-            attendance_records = Attendance.objects.filter(date=date)
+            report_type = form.cleaned_data.get('report_type')
+            export_format = form.cleaned_data.get('format')
 
+            attendance_records = None  # ✅ Initialize to avoid UnboundLocalError
+
+            if report_type == 'daily':
+                date = form.cleaned_data.get('date')
+                if date:
+                    attendance_records = Attendance.objects.filter(date=date)
+
+            elif report_type == 'monthly_range':
+                from_date = form.cleaned_data.get('from_date')
+                to_date = form.cleaned_data.get('to_date')
+                if from_date and to_date:
+                    attendance_records = Attendance.objects.filter(date__range=[from_date, to_date])
+
+            elif report_type == 'monthly_whole':
+                month = form.cleaned_data.get('month')
+                year = form.cleaned_data.get('year')
+                if month and year:
+                    attendance_records = Attendance.objects.filter(date__year=year, date__month=month)
+
+            # ✅ Check if attendance_records is None
+            if attendance_records is None:
+                return HttpResponse("❌ Error: No valid attendance data found. Please select a correct range.", status=400)
+
+            # ✅ Export based on selected format
             if export_format == 'csv':
                 return export_as_csv(attendance_records)
-            elif export_format == 'excel':
-                return export_as_excel(attendance_records)
-            elif export_format == 'pdf':
-                return export_as_pdf(attendance_records)
+            elif export_format == 'tsv':
+                return export_as_tsv(attendance_records)
+            elif export_format == 'txt':
+                return export_as_txt(attendance_records)
 
     else:
         form = ExportAttendanceForm()
 
     return render(request, 'attendance/generate_att.html', {'form': form})
 
-
 def export_as_csv(attendance_records):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="attendance.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Student', 'Status'])  
+    writer.writerow(['Date', 'Student', 'Status'])
 
     for record in attendance_records:
         writer.writerow([
-            record.date,
-            record.student,
+            record.date.strftime('%Y-%m-%d'),
+            str(record.student),
             'Present' if record.present else 'Absent'
         ])
 
-    return response    
-
+    return response
 
 def admin_dashboard(request):
     total_students = Student.objects.count()

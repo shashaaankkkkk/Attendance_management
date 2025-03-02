@@ -1,35 +1,93 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generate Attendance</title>
+    <title>Export Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-gray-100">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <div class="bg-white shadow-lg rounded-lg p-6 w-96">
-        <h2 class="text-2xl font-semibold text-gray-700 text-center mb-4">Generate Attendance</h2>
-        
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-lg">
+        <h2 class="text-2xl font-bold text-gray-700 text-center mb-4">Export Attendance</h2>
+
         <form method="POST" class="space-y-4">
             {% csrf_token %}
 
-            <div>
-                <label for="id_date" class="block text-sm font-medium text-gray-600">Choose a date:</label>
-                {{ form.date }}
+            <!-- Report Type Selection -->
+            <label class="block font-semibold text-gray-700">Select Report Type:</label>
+            <select id="report_type" name="report_type" class="w-full p-2 border rounded" onchange="toggleFields()">
+                <option value="daily">Daily Report</option>
+                <option value="monthly_range">Monthly (Date Range)</option>
+                <option value="monthly_whole">Monthly (Whole Month)</option>
+            </select>
+
+            <!-- Daily Report Fields -->
+            <div id="daily_fields">
+                <label class="block font-semibold text-gray-700">Select Date:</label>
+                <input type="date" name="date" class="w-full p-2 border rounded">
             </div>
 
-            <div>
-                <label for="id_format" class="block text-sm font-medium text-gray-600">Select Format:</label>
-                {{ form.format }}
+            <!-- Monthly Range Fields -->
+            <div id="monthly_range_fields" class="hidden">
+                <label class="block font-semibold text-gray-700">From Date:</label>
+                <input type="date" name="from_date" class="w-full p-2 border rounded">
+                
+                <label class="block font-semibold text-gray-700 mt-2">To Date:</label>
+                <input type="date" name="to_date" class="w-full p-2 border rounded">
             </div>
 
-            <button type="submit" 
-                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-all duration-200">
-                Export
+            <!-- Whole Month Fields -->
+            <div id="monthly_whole_fields" class="hidden">
+                <label class="block font-semibold text-gray-700">Select Month:</label>
+                <select name="month" class="w-full p-2 border rounded">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+
+                <label class="block font-semibold text-gray-700 mt-2">Select Year:</label>
+                <input type="number" name="year" class="w-full p-2 border rounded" min="2000" max="2099" value="2025">
+            </div>
+
+            <!-- Export Format -->
+            <label class="block font-semibold text-gray-700">Export As:</label>
+            <select name="format" class="w-full p-2 border rounded">
+                <option value="csv">CSV</option>
+                <option value="tsv">TSV</option>
+                <option value="txt">TXT</option>
+            </select>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                Export Report
             </button>
         </form>
     </div>
+
+    <!-- JavaScript to Show/Hide Fields -->
+    <script>
+        function toggleFields() {
+            let reportType = document.getElementById("report_type").value;
+
+            document.getElementById("daily_fields").style.display = (reportType === "daily") ? "block" : "none";
+            document.getElementById("monthly_range_fields").style.display = (reportType === "monthly_range") ? "block" : "none";
+            document.getElementById("monthly_whole_fields").style.display = (reportType === "monthly_whole") ? "block" : "none";
+        }
+
+        // Initialize visibility on page load
+        toggleFields();
+    </script>
 
 </body>
 </html>
