@@ -20,4 +20,5 @@ urlpatterns = [
     path('otp',views.verify_otp,name="otp"),
     path("sucess",views.sucesssssss,name="sucess"),
     path('change_your_password', views.change_password, name='change_pass'),
+    path('generate-attendance' , views.export_attendance,name='generate_attnedance')
 ]
