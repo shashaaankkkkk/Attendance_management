@@ -19,7 +19,11 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponse, JsonResponse
 
 # Local imports
-from .models import Class, Student, Attendance, User, Program, Teacher
+from .models import (
+    Class, Student, Attendance, User, Program, Teacher, 
+    Timetable, ScheduledClass, Course, Semester
+)
+
 from .forms import (
     LoginForm, VerifyOTPForm, AttendanceForm, StudentProfileForm, 
     UserProfileForm, ProgramForm, ClassForm, BulkStudentUploadForm, 
@@ -54,18 +58,19 @@ def user_login(request):
 
 
 def user_logout(request):
-   if request.method == "POST":  
+    if request.method == "POST":  
         logout(request)
         return redirect('login') 
     
-   return render(request, 'attendance/logout_confirmation.html')
-
+    return render(request, 'attendance/logout_confirmation.html')
 
 @login_required(login_url="login")
 def teacher_dashboard(request):
+    if not hasattr(request.user, 'teacher_profile'):
+        return render(request, 'attendance/error.html', {'message': 'You are not authorized to access this page.'})
+    
     classes = request.user.teacher_profile.classes.all()
     return render(request, 'attendance/teacher_dashboard.html', {'classes': classes})
-
 
 def teacher_classes(request):
     """View function for the teacher's ERP dashboard."""
@@ -78,11 +83,18 @@ def teacher_classes(request):
     # Data collection for each class
     class_data = []
     for cls in classes:
-        students = cls.students.all()
+        students = Student.objects.filter(program=cls.program)
         total_students = students.count()
         
+        # Fetch scheduled classes for this class's program
+        scheduled_classes = ScheduledClass.objects.filter(
+            course__semester=cls.program.semesters.last()
+        )
+        
         # Attendance records for the latest date
-        latest_attendance = Attendance.objects.filter(class_name=cls).order_by('-date')[:5]
+        latest_attendance = Attendance.objects.filter(
+            scheduled_class__in=scheduled_classes
+        ).order_by('-date')[:5]
         
         class_data.append({
             'class': cls,
@@ -96,52 +108,82 @@ def teacher_classes(request):
     }
     return render(request, 'attendance/teacher_classes.html', context)
 
-
-@login_required
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
     today = date.today()
     
     if request.method == 'POST':
-        students = class_obj.students.all()
-        for student in students:
-            present = request.POST.get(f'present_{student.id}') == 'on'
-            attendance_record, _ = Attendance.objects.get_or_create(
-                student=student,
-                class_name=class_obj,
-                date=today,
-                defaults={'present': present}
+        # Get students in the program associated with this class
+        students = Student.objects.filter(program=class_obj.program)
+        
+        # Find the scheduled class for today
+        try:
+            scheduled_classes = ScheduledClass.objects.filter(
+                course__semester=class_obj.program.semesters.last(),  # Get current semester
+                timetable__day_of_week=today.strftime('%A')
             )
             
-            if not _:  # If record exists, update it
-                # Check if attendance status changed from present to absent
-                if attendance_record.present and not present:
-                    attendance_record.present = present
-                    attendance_record.save()
-                    # Send absence notification
-                    send_absence_notification(student, class_obj.name, today)
-                else:
-                    attendance_record.present = present
-                    attendance_record.save()
-            elif not present:  # New record and student is absent
-                # Send absence notification
-                send_absence_notification(student, class_obj.name, today)
+            if not scheduled_classes.exists():
+                messages.error(request, "No scheduled classes found for today.")
+                return redirect('teacher_dashboard')
+            
+            scheduled_class = scheduled_classes.first()
+            
+            for student in students:
+                present = request.POST.get(f'present_{student.id}') == 'on'
                 
-        return redirect('teacher_dashboard')
+                # Create or update attendance record
+                attendance_record, created = Attendance.objects.get_or_create(
+                    student=student,
+                    scheduled_class=scheduled_class,
+                    date=today,
+                    defaults={'present': present}
+                )
+                
+                if not created:
+                    attendance_record.present = present
+                    attendance_record.save()
+                
+                # Send absence notification if needed
+                if not present:
+                    send_absence_notification(student, class_obj.name, today)
+            
+            messages.success(request, "Attendance recorded successfully.")
+            return redirect('teacher_dashboard')
+        
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect('teacher_dashboard')
     
+    # For GET request
+    # Get students in the program associated with this class
+    students = Student.objects.filter(program=class_obj.program)
     
-    # Get existing attendance records for today
-    students = class_obj.students.all()
-    existing_attendance = Attendance.objects.filter(
-        class_name=class_obj,
-        date=today
-    ).select_related('student')
+    # Try to find existing attendance records for today
+    try:
+        scheduled_classes = ScheduledClass.objects.filter(
+            course__semester=class_obj.program.semesters.last(),
+            timetable__day_of_week=today.strftime('%A')
+        )
+        
+        if scheduled_classes.exists():
+            scheduled_class = scheduled_classes.first()
+            existing_attendance = Attendance.objects.filter(
+                scheduled_class=scheduled_class,
+                date=today
+            )
+            
+            # Create a dict of student_id: attendance_status
+            attendance_status = {
+                att.student_id: att.present 
+                for att in existing_attendance
+            }
+        else:
+            attendance_status = {}
     
-    # Create a dict of student_id: attendance_status
-    attendance_status = {
-        att.student_id: att.present 
-        for att in existing_attendance
-    }
+    except Exception as e:
+        messages.error(request, f"Error fetching attendance: {str(e)}")
+        attendance_status = {}
     
     return render(request, 'attendance/mark_attendance.html', {
         'class_obj': class_obj,
@@ -151,17 +193,26 @@ def mark_attendance(request, class_id):
     })
 
 
+
 @login_required
 def student_dashboard(request):
     student_profile = request.user.student_profile
-    classes = student_profile.classes.all()
     today = date.today()
     
-    processed_classes = []
-    for class_obj in classes:
+    # Get the current semester
+    current_semester = student_profile.program.semesters.last()
+    
+    # Get courses in current semester
+    courses = current_semester.courses.all()
+    
+    processed_courses = []
+    for course in courses:
+        # Get all scheduled classes for this course
+        scheduled_classes = ScheduledClass.objects.filter(course=course)
+        
         attendance_records = Attendance.objects.filter(
-            class_name=class_obj,
             student=student_profile,
+            scheduled_class__in=scheduled_classes,
             date__month=today.month,
             date__year=today.year
         )
@@ -172,14 +223,14 @@ def student_dashboard(request):
             if attendance.present
         }
         
-        processed_classes.append({
-            'id': class_obj.id,
-            'name': class_obj.name,
+        processed_courses.append({
+            'id': course.id,
+            'name': course.name,
             'present_dates': present_dates
         })
     
     return render(request, 'attendance/student_dashboard.html', {
-        'classes': processed_classes,
+        'courses': processed_courses,
         'current_month': today.strftime('%B %Y'),
         'month_dates': [
             {'day': day, 'date': today.replace(day=day)}
@@ -187,8 +238,6 @@ def student_dashboard(request):
         ]
     })
 
-
-@login_required
 def show_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
     selected_date = date.today()
@@ -199,29 +248,56 @@ def show_attendance(request, class_id):
         except ValueError:
             pass  # Keep using today's date if invalid date provided
 
-    # Fetch attendance for the selected date
-    attendance_records = Attendance.objects.filter(class_name=class_obj, date=selected_date)
+    # Find the scheduled class for the selected date
+    try:
+        scheduled_classes = ScheduledClass.objects.filter(
+            course__semester=class_obj.program.semesters.last(),
+            timetable__day_of_week=selected_date.strftime('%A')
+        )
+        
+        if not scheduled_classes.exists():
+            messages.error(request, "No scheduled classes found for the selected date.")
+            return render(request, 'attendance/show_attendance.html', {
+                'class_obj': class_obj,
+                'selected_date': selected_date,
+                'attendance_records': [],
+                'attendance_summary': {}
+            })
+        
+        scheduled_class = scheduled_classes.first()
 
-    # Generate attendance summary for calendar
-    attendance_summary = {}
+        # Fetch attendance for the selected date
+        attendance_records = Attendance.objects.filter(
+            scheduled_class=scheduled_class, 
+            date=selected_date
+        )
 
-    all_attendance = Attendance.objects.filter(class_name=class_obj)
-    for record in all_attendance:
-        record_date = record.date.strftime("%Y-%m-%d")  # Convert date to string for JSON compatibility
-        if record_date not in attendance_summary:
-            attendance_summary[record_date] = {"present_count": 0, "absent_count": 0}
-        if record.present:
-            attendance_summary[record_date]["present_count"] += 1
-        else:
-            attendance_summary[record_date]["absent_count"] += 1
+        # Generate attendance summary for calendar
+        attendance_summary = {}
+
+        all_attendance = Attendance.objects.filter(
+            scheduled_class=scheduled_class
+        )
+        for record in all_attendance:
+            record_date = record.date.strftime("%Y-%m-%d")  # Convert date to string for JSON compatibility
+            if record_date not in attendance_summary:
+                attendance_summary[record_date] = {"present_count": 0, "absent_count": 0}
+            if record.present:
+                attendance_summary[record_date]["present_count"] += 1
+            else:
+                attendance_summary[record_date]["absent_count"] += 1
+
+    except Exception as e:
+        messages.error(request, f"Error fetching attendance: {str(e)}")
+        attendance_records = []
+        attendance_summary = {}
 
     return render(request, 'attendance/show_attendance.html', {
         'class_obj': class_obj,
         'attendance_records': attendance_records,
         'selected_date': selected_date,
-        'attendance_summary': attendance_summary,  # Send dictionary directly
+        'attendance_summary': attendance_summary,
     })
-
 
 def password_change_required(user):
     return not user.must_change_password
@@ -311,7 +387,6 @@ def bulk_student_upload(request, class_id):
         'class_obj': class_obj
     })
 
-
 def send_absence_notification(student, class_name, date):
     """
     Send an email notification to a student when they are marked absent.
@@ -343,7 +418,6 @@ def send_absence_notification(student, class_name, date):
     except Exception as e:
         print(f"Failed to send email to {student.user.email}: {str(e)}")
         return False
-
 
 @login_required  
 def edit_student_profile(request):  
@@ -379,7 +453,7 @@ def student_profile(request):
 
     return render(request, 'attendance/student_profile.html', {'student': student})
 
-
+@login_required
 def fetch_attendance(request, class_id):
     selected_date = request.GET.get('date', None)
 
@@ -404,7 +478,6 @@ def fetch_attendance(request, class_id):
 
     return JsonResponse({'error': 'Date not provided'}, status=400)
 
-
 @login_required
 def class_detail(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
@@ -416,12 +489,18 @@ def class_detail(request, class_id):
     dates = [(datetime.now() - timedelta(days=i)).date() for i in range(7)]
     attendance_data = []
     
-    for attendance_date in dates:  # Avoid using 'date' as a variable name
+    # Find scheduled classes for this program
+    scheduled_classes = ScheduledClass.objects.filter(
+        course__semester=class_obj.program.semesters.last()
+    )
+    
+    for attendance_date in dates:
         present_count = Attendance.objects.filter(
-            class_name=class_obj,
+            scheduled_class__in=scheduled_classes,
             date=attendance_date,
             present=True
         ).count()
+        
         attendance_data.append({
             'date': attendance_date.strftime('%d %b'),
             'present': present_count,
@@ -454,86 +533,6 @@ def change_password(request):
         form=PasswordChangeForm(user=request.user)
     return render(request,'attendance/change_pass.html',{'form':form})    
 
-
-@login_required
-def excel_attendance(request, class_id):
-    class_obj = get_object_or_404(Class, id=class_id)
-    
-    # Get year and month from request, default to current
-    year = int(request.GET.get('year', date.today().year))
-    month = int(request.GET.get('month', date.today().month))
-    
-    # Get number of days in the month
-    _, num_days = monthrange(year, month)
-    
-    # Generate list of dates for the month
-    dates = [date(year, month, day) for day in range(1, num_days + 1)]
-    
-    # Get all students in the class
-    students = class_obj.students.all().order_by('roll_number')
-    
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            attendance_data = data.get('attendance', {})
-            
-            # Process attendance data
-            for student_id, dates_data in attendance_data.items():
-                student = get_object_or_404(Student, id=student_id)
-                for date_str, present in dates_data.items():
-                    attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                    attendance, created = Attendance.objects.get_or_create(
-                        student_id=student_id,
-                        class_name=class_obj,
-                        date=attendance_date,
-                        defaults={'present': present}
-                    )
-                    if not created:
-                        attendance.present = present
-                        attendance.save()
-            
-            return JsonResponse({'status': 'success'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    
-    # Get existing attendance records for the month
-    attendance_records = Attendance.objects.filter(
-        class_name=class_obj,
-        date__year=year,
-        date__month=month
-    ).select_related('student')
-    
-    # Create attendance matrix
-    attendance_matrix = {}
-    for student in students:
-        attendance_matrix[student.id] = {
-            'student_name': f"{student.user.get_full_name()}",
-            'roll_number': student.roll_number,
-            'attendance': {}
-        }
-        # Initialize all dates as absent
-        for d in dates:
-            attendance_matrix[student.id]['attendance'][d.strftime('%Y-%m-%d')] = False
-    
-    # Fill in existing attendance records
-    for record in attendance_records:
-        date_str = record.date.strftime('%Y-%m-%d')
-        if record.student_id in attendance_matrix:
-            attendance_matrix[record.student_id]['attendance'][date_str] = record.present
-    
-    context = {
-        'class_obj': class_obj,
-        'dates': dates,
-        'students': students,
-        'attendance_matrix': attendance_matrix,
-        'current_month': date(year, month, 1).strftime('%B %Y'),
-        'prev_month': (date(year, month, 1) - timedelta(days=1)).strftime('%Y-%m'),
-        'next_month': (date(year, month, 1) + timedelta(days=32)).strftime('%Y-%m'),
-        'year': year,
-        'month': month,
-    }
-    
-    return render(request, 'attendance/excel_attendance.html', context)
 
 
 def verify_otp(request):
@@ -574,6 +573,22 @@ from .forms import ExportAttendanceForm
 from .models import Attendance
 import csv
 
+def export_as_csv(attendance_records):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="attendance.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Student', 'Status'])
+
+    for record in attendance_records:
+        writer.writerow([
+            record.date.strftime('%Y-%m-%d'),
+            str(record.student),
+            'Present' if record.present else 'Absent'
+        ])
+
+    return response
+
 def export_attendance(request):
     if request.method == "POST":
         form = ExportAttendanceForm(request.POST)
@@ -608,30 +623,16 @@ def export_attendance(request):
             if export_format == 'csv':
                 return export_as_csv(attendance_records)
             elif export_format == 'tsv':
-                return export_as_tsv(attendance_records)
+                pass
             elif export_format == 'txt':
-                return export_as_txt(attendance_records)
+                pass
 
     else:
         form = ExportAttendanceForm()
 
     return render(request, 'attendance/generate_att.html', {'form': form})
 
-def export_as_csv(attendance_records):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="attendance.csv"'
 
-    writer = csv.writer(response)
-    writer.writerow(['Date', 'Student', 'Status'])
-
-    for record in attendance_records:
-        writer.writerow([
-            record.date.strftime('%Y-%m-%d'),
-            str(record.student),
-            'Present' if record.present else 'Absent'
-        ])
-
-    return response
 
 def admin_dashboard(request):
     total_students = Student.objects.count()
@@ -720,3 +721,84 @@ def create_class(request):
     
     context = {'form': form}
     return render(request, 'attendance/create_class.html', context)
+
+def excel_attendance(request, class_id):
+    class_obj = get_object_or_404(Class, id=class_id)
+
+    # Get year and month from request, default to current
+    year = int(request.GET.get('year', date.today().year))
+    month = int(request.GET.get('month', date.today().month))
+    
+    # Get number of days in the month
+    _, num_days = monthrange(year, month)
+    dates = [date(year, month, day) for day in range(1, num_days + 1)]
+
+    # Get all students in the class's program
+    students = Student.objects.filter(program=class_obj.program).order_by('user__username')
+
+    # Find scheduled classes for this program
+    scheduled_classes = ScheduledClass.objects.filter(
+        course__semester=class_obj.program.semesters.last()
+    )
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            attendance_data = data.get('attendance', {})
+
+            for student_id, dates_data in attendance_data.items():
+                student = get_object_or_404(Student, id=student_id)
+
+                for date_str, present in dates_data.items():
+                    attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    
+                    # Find matching scheduled class for this date
+                    matching_scheduled_class = scheduled_classes.filter(
+                        timetable__day_of_week=attendance_date.strftime('%A')
+                    ).first()
+
+                    if matching_scheduled_class:
+                        Attendance.objects.update_or_create(
+                            student=student,
+                            scheduled_class=matching_scheduled_class,
+                            date=attendance_date,
+                            defaults={'present': present}
+                        )
+
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    # Get existing attendance records
+    attendance_records = Attendance.objects.filter(
+        scheduled_class__in=scheduled_classes, 
+        date__year=year, 
+        date__month=month
+    ).select_related('student')
+
+    # Create attendance matrix
+    attendance_matrix = {
+        student.id: {
+            'student_name': student.user.get_full_name(),
+            'attendance': {d.strftime('%Y-%m-%d'): False for d in dates}
+        }
+        for student in students
+    }
+
+    # Fill in existing attendance records
+    for record in attendance_records:
+        attendance_matrix[record.student.id]['attendance'][record.date.strftime('%Y-%m-%d')] = record.present
+
+    context = {
+        'class_obj': class_obj,
+        'dates': dates,
+        'students': students,
+        'attendance_matrix': attendance_matrix,
+        'current_month': date(year, month, 1).strftime('%B %Y'),
+        'prev_month': (date(year, month, 1) - timedelta(days=1)).strftime('%Y-%m'),
+        'next_month': (date(year, month, 1) + timedelta(days=32)).strftime('%Y-%m'),
+        'year': year,
+        'month': month,
+    }
+
+    return render(request, 'attendance/excel_attendance.html', context)

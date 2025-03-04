@@ -72,15 +72,14 @@ class Course(models.Model):
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=20, unique=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='courses')
+    teachers = models.ManyToManyField(Teacher, related_name='courses')  # Multiple teachers can teach a course
 
     def __str__(self):
         return f"{self.code} - {self.name}"
 
 
-
 class Timetable(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='timetables')
-    class_assigned = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='timetables')
     day_of_week = models.CharField(max_length=10, choices=[
         ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ('Wednesday', 'Wednesday'),
         ('Thursday', 'Thursday'), ('Friday', 'Friday'), ('Saturday', 'Saturday'),
@@ -90,7 +89,7 @@ class Timetable(models.Model):
 
     def __str__(self):
         return f"{self.course.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
-    
+
 
     
 class AcademicYear(models.Model):
@@ -100,15 +99,28 @@ class AcademicYear(models.Model):
     def __str__(self):
         return f"{self.start_year}-{self.end_year}"
     
+
+
+class ScheduledClass(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='scheduled_classes')
+    timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE, related_name='scheduled_classes')
+    topic = models.CharField(max_length=255, blank=True, help_text="Optional: Topic covered in this session")
+
+    @property
+    def students(self):
+        return Student.objects.filter(semester=self.course.semester)
+
+    def __str__(self):
+        return f"{self.course.name} - {self.timetable.day_of_week} ({self.timetable.start_time} - {self.timetable.end_time})"
+
 class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
-    class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records')  # Kept for backward compatibility
-    timetable = models.ForeignKey(Timetable, on_delete=models.SET_NULL, null=True, blank=True, related_name='attendance_records')  # New Field
+    scheduled_class = models.ForeignKey(ScheduledClass, on_delete=models.CASCADE, related_name='attendance_records')
     date = models.DateField()
     present = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('student', 'class_name', 'date')  # No change to existing constraints
+        unique_together = ('student', 'scheduled_class', 'date')
 
     def __str__(self):
-        return f"{self.student.user.username} - {self.class_name.name} - {self.date}"
+        return f"{self.student.user.username} - {self.scheduled_class.course.name} - {self.scheduled_class.timetable.day_of_week} - {self.date}"

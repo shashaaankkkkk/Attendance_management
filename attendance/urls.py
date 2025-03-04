@@ -17,8 +17,15 @@ urlpatterns = [
     path('change-password/', views.first_login_password_change, name='first_login_password_change'),
     path('fetch_attendance/<int:class_id>/', views.fetch_attendance, name='fetch_attendance'),
     path('class/<int:class_id>/', views.class_detail, name='class_detail'),
-    path('otp',views.verify_otp,name="otp"),
+    path('otp',views.verify_otp,name='otp'),
     path("sucess",views.sucesssssss,name="sucess"),
+    path('generate-attendance', views.export_attendance, name='generate_attendance'),
     path('change_your_password', views.change_password, name='change_pass'),
-    path('generate-attendance' , views.export_attendance,name='generate_attnedance')
+    path('admin-dashboard', views.admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/program',views.programs,name='program'),
+    path('admin-dashboard/teachers',views.teachers,name='teachers'),
+    path('admin-dashboard/attendance_policy',views.attendance_policy,name='attendance_policy'),
+    path("admin-dashboard/add-teacher/", views.add_teacher_view, name="add_teacher"),
+    path('admin-dashboard/classes/', views.class_list, name='class_list'),
+    path('admin-dashboard/classes/create/', views.create_class, name='create_class'),
 ]
