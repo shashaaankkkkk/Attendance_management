@@ -37,28 +37,6 @@ class Program(models.Model):
         return self.name
 
 
-class Class(models.Model):
-    name = models.CharField(max_length=100)
-    teachers = models.ManyToManyField(Teacher, related_name='classes')
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='classes')
-    course_code = models.CharField(max_length=20, unique=True,null=True, blank=True)
-
-    @property
-    def students(self):
-        """Returns students belonging to this class's program"""
-        return Student.objects.filter(program=self.program)
-
-    def __str__(self):
-        return f"{self.name} ({self.course_code}) - {self.program.name}"
-
-
-class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
-    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='students')
-
-    def __str__(self):
-        return self.user.username
-    
 class Semester(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='semesters')
     semester_number = models.IntegerField()  # e.g., 1, 2, 3...
@@ -68,59 +46,61 @@ class Semester(models.Model):
     def __str__(self):
         return f"{self.program.name} - Semester {self.semester_number}"
 
-class Course(models.Model):
-    name = models.CharField(max_length=200)
+
+class Class(models.Model):
+    name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='courses')
-    teachers = models.ManyToManyField(Teacher, related_name='courses')  # Multiple teachers can teach a course
+    teachers = models.ManyToManyField(Teacher, related_name='classes')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='classes')
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='classes')
+    
+    @property
+    def students(self):
+        """Returns students belonging to this class's program"""
+        return Student.objects.filter(program=self.program)
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.name} ({self.code}) - {self.program.name}"
+
+
+class Student(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='students')
+
+    def __str__(self):
+        return self.user.username
 
 
 class Timetable(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='timetables')
+    class_instance = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='timetables')
     day_of_week = models.CharField(max_length=10, choices=[
         ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ('Wednesday', 'Wednesday'),
         ('Thursday', 'Thursday'), ('Friday', 'Friday'), ('Saturday', 'Saturday'),
     ])
     start_time = models.TimeField()
     end_time = models.TimeField()
+    topic = models.CharField(max_length=255, blank=True, help_text="Optional: Topic covered in this session")
+    date = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.course.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
+        return f"{self.class_instance.name} - {self.day_of_week} ({self.start_time} - {self.end_time})"
 
 
+class Attendance(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
+    timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE, related_name='attendance_records')
+    present = models.BooleanField(default=False)
     
+    class Meta:
+        unique_together = ('student', 'timetable')
+
+    def __str__(self):
+        return f"{self.student.user.username} - {self.timetable.class_instance.name} - {self.timetable.day_of_week}"
+
+
 class AcademicYear(models.Model):
     start_year = models.IntegerField()
     end_year = models.IntegerField()
 
     def __str__(self):
         return f"{self.start_year}-{self.end_year}"
-    
-
-
-class ScheduledClass(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='scheduled_classes')
-    timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE, related_name='scheduled_classes')
-    topic = models.CharField(max_length=255, blank=True, help_text="Optional: Topic covered in this session")
-
-    @property
-    def students(self):
-        return Student.objects.filter(semester=self.course.semester)
-
-    def __str__(self):
-        return f"{self.course.name} - {self.timetable.day_of_week} ({self.timetable.start_time} - {self.timetable.end_time})"
-
-class Attendance(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
-    scheduled_class = models.ForeignKey(ScheduledClass, on_delete=models.CASCADE, related_name='attendance_records')
-    date = models.DateField()
-    present = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = ('student', 'scheduled_class', 'date')
-
-    def __str__(self):
-        return f"{self.student.user.username} - {self.scheduled_class.course.name} - {self.scheduled_class.timetable.day_of_week} - {self.date}"

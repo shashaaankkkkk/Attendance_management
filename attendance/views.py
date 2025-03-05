@@ -4,7 +4,7 @@ import csv
 import json
 from datetime import date, datetime, timedelta
 from calendar import monthrange
-
+from django.views.decorators.http import require_http_methods
 # Django imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
@@ -21,7 +21,7 @@ from django.http import HttpResponse, JsonResponse
 # Local imports
 from .models import (
     Class, Student, Attendance, User, Program, Teacher, 
-    Timetable, ScheduledClass, Course, Semester
+    Timetable, Semester
 )
 
 from .forms import (
@@ -56,13 +56,13 @@ def user_login(request):
     
     return render(request, 'attendance/login.html', {'form': form})
 
-
 def user_logout(request):
     if request.method == "POST":  
         logout(request)
         return redirect('login') 
     
     return render(request, 'attendance/logout_confirmation.html')
+
 
 @login_required(login_url="login")
 def teacher_dashboard(request):
@@ -86,15 +86,15 @@ def teacher_classes(request):
         students = Student.objects.filter(program=cls.program)
         total_students = students.count()
         
-        # Fetch scheduled classes for this class's program
-        scheduled_classes = ScheduledClass.objects.filter(
-            course__semester=cls.program.semesters.last()
+        # Fetch timetables for this class's program
+        timetables = Timetable.objects.filter(
+            class_instance__semester=cls.program.semesters.last()
         )
         
         # Attendance records for the latest date
         latest_attendance = Attendance.objects.filter(
-            scheduled_class__in=scheduled_classes
-        ).order_by('-date')[:5]
+            timetable__in=timetables
+        ).order_by('-timetable__date')[:5]
         
         class_data.append({
             'class': cls,
@@ -108,6 +108,8 @@ def teacher_classes(request):
     }
     return render(request, 'attendance/teacher_classes.html', context)
 
+
+
 def mark_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
     today = date.today()
@@ -116,18 +118,18 @@ def mark_attendance(request, class_id):
         # Get students in the program associated with this class
         students = Student.objects.filter(program=class_obj.program)
         
-        # Find the scheduled class for today
+        # Find the timetable for today
         try:
-            scheduled_classes = ScheduledClass.objects.filter(
-                course__semester=class_obj.program.semesters.last(),  # Get current semester
-                timetable__day_of_week=today.strftime('%A')
+            timetables = Timetable.objects.filter(
+                class_instance=class_obj,
+                day_of_week=today.strftime('%A')
             )
             
-            if not scheduled_classes.exists():
-                messages.error(request, "No scheduled classes found for today.")
+            if not timetables.exists():
+                messages.error(request, "No timetables found for today.")
                 return redirect('teacher_dashboard')
             
-            scheduled_class = scheduled_classes.first()
+            timetable = timetables.first()
             
             for student in students:
                 present = request.POST.get(f'present_{student.id}') == 'on'
@@ -135,8 +137,7 @@ def mark_attendance(request, class_id):
                 # Create or update attendance record
                 attendance_record, created = Attendance.objects.get_or_create(
                     student=student,
-                    scheduled_class=scheduled_class,
-                    date=today,
+                    timetable=timetable,
                     defaults={'present': present}
                 )
                 
@@ -161,16 +162,15 @@ def mark_attendance(request, class_id):
     
     # Try to find existing attendance records for today
     try:
-        scheduled_classes = ScheduledClass.objects.filter(
-            course__semester=class_obj.program.semesters.last(),
-            timetable__day_of_week=today.strftime('%A')
+        timetables = Timetable.objects.filter(
+            class_instance=class_obj,
+            day_of_week=today.strftime('%A')
         )
         
-        if scheduled_classes.exists():
-            scheduled_class = scheduled_classes.first()
+        if timetables.exists():
+            timetable = timetables.first()
             existing_attendance = Attendance.objects.filter(
-                scheduled_class=scheduled_class,
-                date=today
+                timetable=timetable
             )
             
             # Create a dict of student_id: attendance_status
@@ -192,8 +192,6 @@ def mark_attendance(request, class_id):
         'attendance_status': attendance_status
     })
 
-
-
 @login_required
 def student_dashboard(request):
     student_profile = request.user.student_profile
@@ -202,41 +200,43 @@ def student_dashboard(request):
     # Get the current semester
     current_semester = student_profile.program.semesters.last()
     
-    # Get courses in current semester
-    courses = current_semester.courses.all()
+    # Get classes in current semester
+    classes = current_semester.classes.all()
     
-    processed_courses = []
-    for course in courses:
-        # Get all scheduled classes for this course
-        scheduled_classes = ScheduledClass.objects.filter(course=course)
+    processed_classes = []
+    for class_obj in classes:
+        # Get all timetables for this class
+        timetables = Timetable.objects.filter(class_instance=class_obj)
         
         attendance_records = Attendance.objects.filter(
             student=student_profile,
-            scheduled_class__in=scheduled_classes,
-            date__month=today.month,
-            date__year=today.year
+            timetable__in=timetables,
+            timetable__date__month=today.month,
+            timetable__date__year=today.year
         )
         
         present_dates = {
-            attendance.date.day 
+            attendance.timetable.date.day 
             for attendance in attendance_records 
             if attendance.present
         }
         
-        processed_courses.append({
-            'id': course.id,
-            'name': course.name,
+        processed_classes.append({
+            'id': class_obj.id,
+            'name': class_obj.name,
             'present_dates': present_dates
         })
     
     return render(request, 'attendance/student_dashboard.html', {
-        'courses': processed_courses,
+        'classes': processed_classes,
         'current_month': today.strftime('%B %Y'),
         'month_dates': [
             {'day': day, 'date': today.replace(day=day)}
             for day in range(1, 32) if day <= today.day
         ]
     })
+
+
 
 def show_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
@@ -248,15 +248,15 @@ def show_attendance(request, class_id):
         except ValueError:
             pass  # Keep using today's date if invalid date provided
 
-    # Find the scheduled class for the selected date
+    # Find the timetable for the selected date
     try:
-        scheduled_classes = ScheduledClass.objects.filter(
-            course__semester=class_obj.program.semesters.last(),
-            timetable__day_of_week=selected_date.strftime('%A')
+        timetables = Timetable.objects.filter(
+            class_instance=class_obj,
+            day_of_week=selected_date.strftime('%A')
         )
         
-        if not scheduled_classes.exists():
-            messages.error(request, "No scheduled classes found for the selected date.")
+        if not timetables.exists():
+            messages.error(request, "No timetables found for the selected date.")
             return render(request, 'attendance/show_attendance.html', {
                 'class_obj': class_obj,
                 'selected_date': selected_date,
@@ -264,22 +264,21 @@ def show_attendance(request, class_id):
                 'attendance_summary': {}
             })
         
-        scheduled_class = scheduled_classes.first()
+        timetable = timetables.first()
 
         # Fetch attendance for the selected date
         attendance_records = Attendance.objects.filter(
-            scheduled_class=scheduled_class, 
-            date=selected_date
+            timetable=timetable
         )
 
         # Generate attendance summary for calendar
         attendance_summary = {}
 
         all_attendance = Attendance.objects.filter(
-            scheduled_class=scheduled_class
+            timetable=timetable
         )
         for record in all_attendance:
-            record_date = record.date.strftime("%Y-%m-%d")  # Convert date to string for JSON compatibility
+            record_date = record.timetable.date.strftime("%Y-%m-%d")  # Convert date to string for JSON compatibility
             if record_date not in attendance_summary:
                 attendance_summary[record_date] = {"present_count": 0, "absent_count": 0}
             if record.present:
@@ -478,7 +477,7 @@ def fetch_attendance(request, class_id):
 
     return JsonResponse({'error': 'Date not provided'}, status=400)
 
-@login_required
+
 def class_detail(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
     
@@ -489,15 +488,15 @@ def class_detail(request, class_id):
     dates = [(datetime.now() - timedelta(days=i)).date() for i in range(7)]
     attendance_data = []
     
-    # Find scheduled classes for this program
-    scheduled_classes = ScheduledClass.objects.filter(
-        course__semester=class_obj.program.semesters.last()
+    # Find timetables for this program
+    timetables = Timetable.objects.filter(
+        class_instance__semester=class_obj.program.semesters.last()
     )
     
     for attendance_date in dates:
         present_count = Attendance.objects.filter(
-            scheduled_class__in=scheduled_classes,
-            date=attendance_date,
+            timetable__in=timetables,
+            timetable__date=attendance_date,
             present=True
         ).count()
         
@@ -513,6 +512,7 @@ def class_detail(request, class_id):
         'attendance_data': attendance_data
     }
     return render(request, 'attendance/class_detail.html', context)
+
 
 
 @login_required
@@ -722,6 +722,8 @@ def create_class(request):
     context = {'form': form}
     return render(request, 'attendance/create_class.html', context)
 
+
+
 def excel_attendance(request, class_id):
     class_obj = get_object_or_404(Class, id=class_id)
 
@@ -736,9 +738,11 @@ def excel_attendance(request, class_id):
     # Get all students in the class's program
     students = Student.objects.filter(program=class_obj.program).order_by('user__username')
 
-    # Find scheduled classes for this program
-    scheduled_classes = ScheduledClass.objects.filter(
-        course__semester=class_obj.program.semesters.last()
+    # Find timetables for this class
+    timetables = Timetable.objects.filter(
+        class_instance=class_obj,
+        date__year=year,
+        date__month=month
     )
 
     if request.method == 'POST':
@@ -752,16 +756,13 @@ def excel_attendance(request, class_id):
                 for date_str, present in dates_data.items():
                     attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     
-                    # Find matching scheduled class for this date
-                    matching_scheduled_class = scheduled_classes.filter(
-                        timetable__day_of_week=attendance_date.strftime('%A')
-                    ).first()
+                    # Find matching timetable for this date
+                    matching_timetable = timetables.filter(date=attendance_date).first()
 
-                    if matching_scheduled_class:
+                    if matching_timetable:
                         Attendance.objects.update_or_create(
                             student=student,
-                            scheduled_class=matching_scheduled_class,
-                            date=attendance_date,
+                            timetable=matching_timetable,
                             defaults={'present': present}
                         )
 
@@ -771,9 +772,7 @@ def excel_attendance(request, class_id):
 
     # Get existing attendance records
     attendance_records = Attendance.objects.filter(
-        scheduled_class__in=scheduled_classes, 
-        date__year=year, 
-        date__month=month
+        timetable__in=timetables
     ).select_related('student')
 
     # Create attendance matrix
@@ -787,7 +786,7 @@ def excel_attendance(request, class_id):
 
     # Fill in existing attendance records
     for record in attendance_records:
-        attendance_matrix[record.student.id]['attendance'][record.date.strftime('%Y-%m-%d')] = record.present
+        attendance_matrix[record.student.id]['attendance'][record.timetable.date.strftime('%Y-%m-%d')] = record.present
 
     context = {
         'class_obj': class_obj,
@@ -802,3 +801,43 @@ def excel_attendance(request, class_id):
     }
 
     return render(request, 'attendance/excel_attendance.html', context)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def add_past_attendance(request, class_id):
+    # Get the class or return 404 if not found
+    class_instance = get_object_or_404(Class, id=class_id)
+    
+    # Get all timetables for this class
+    timetables = Timetable.objects.filter(class_instance=class_instance)
+    
+    # Get students in the class's program
+    students = Student.objects.filter(program=class_instance.program)
+    
+    if request.method == 'POST':
+        # Get the selected timetable from the form
+        timetable_id = request.POST.get('timetable')
+        selected_timetable = get_object_or_404(Timetable, id=timetable_id, class_instance=class_instance)
+        
+        # Process attendance submission
+        for student in students:
+            # Get attendance status for each student
+            present_status = request.POST.get(f'student_{student.id}', 'off')
+            
+            # Create or update attendance record
+            Attendance.objects.update_or_create(
+                student=student,
+                timetable=selected_timetable,
+                defaults={'present': present_status == 'on'}
+            )
+        
+        messages.success(request, 'Attendance recorded successfully!')
+        return redirect('add_past_attendance', class_id=class_id)
+    
+    # Prepare context for rendering
+    context = {
+        'class_instance': class_instance,
+        'timetables': timetables,
+        'students': students,
+    }
+    return render(request, 'attendance/add_past_attendance.html', context)

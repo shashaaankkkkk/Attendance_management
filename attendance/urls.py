@@ -28,4 +28,5 @@ urlpatterns = [
     path("admin-dashboard/add-teacher/", views.add_teacher_view, name="add_teacher"),
     path('admin-dashboard/classes/', views.class_list, name='class_list'),
     path('admin-dashboard/classes/create/', views.create_class, name='create_class'),
+        path('attendance/past/<int:class_id>/', views.add_past_attendance, name='add_past_attendance'),
 ]

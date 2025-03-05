@@ -3,113 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ class_obj.name }} - Attendance Sheet</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"></script>
-    <style>
-        body {
-            font-size: 16px;
-            font-family: Arial, sans-serif;
-            background-color: #f8fafc;
-            padding: 20px;
-        }
-        .attendance-cell {
-            width: 60px;
-            height: 60px;
-            text-align: center;
-            cursor: pointer;
-            user-select: none;
-            border: 1px solid #ccc;
-            transition: background 0.2s ease-in-out;
-            font-weight: bold;
-        }
-        .attendance-cell.present {
-            background-color:rgb(73, 241, 135);
-            color: white;
-        }
-        .attendance-cell.absent {
-            background-color:rgb(255, 104, 104);
-            color: white;
-        }
-        .attendance-cell:hover {
-            opacity: 0.8;
-        }
-        .sticky-header, .sticky-column {
-            position: sticky;
-            background-color:rgb(218, 220, 223);
-            z-index: 10;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .sticky-header {
-            top: 0;
-        }
-        .sticky-column {
-            left: 0;
-            z-index: 5;
-            font-weight: bold;
-        }
-        .table-container {
-            overflow-x: auto;
-            max-height: 80vh;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            background: white;
-            padding: 15px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            table-layout: auto;
-        }
-        th, td {
-            padding: 12px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-        th {
-            background: #2563eb;
-            color: white;
-            font-size: 18px;
-        }
-        tr:nth-child(even) {
-            background-color: #f3f4f6;
-        }
-        tr:hover {
-            background-color: #e5e7eb;
-        }
-    </style>
+    <title>Attendance Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
-<body class="bg-gray-100 flex justify-center items-center min-h-screen">
-    <div class="container mx-auto p-6">
-        <div class="table-container">
-            <table id="attendanceTable">
-                <thead>
-                    <tr class="sticky-header">
-                        <th class="sticky-column">Student Name</th>
-                        <th class="sticky-column">Roll No</th>
-                        {% for date in dates %}
-                        <th>{{ date.day }}<br><small>{{ date|date:"D" }}</small></th>
-                        {% endfor %}
+<body class="bg-gray-50 min-h-screen">
+    <div x-data="attendanceManager()" x-init="initializeAttendance" class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Class Attendance</h1>
+                    <p class="text-gray-600 text-lg" x-text="formatCurrentMonth"></p>
+                </div>
+
+                <!-- Month Navigation -->
+                <div class="flex items-center space-x-4">
+                    <select 
+                        x-model="selectedYear" 
+                        @change="loadAttendance"
+                        class="form-select px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                        <template x-for="year in availableYears" :key="year">
+                            <option :value="year" x-text="year"></option>
+                        </template>
+                    </select>
+
+                    <select 
+                        x-model="selectedMonth" 
+                        @change="loadAttendance"
+                        class="form-select px-3 py-2 border rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+                    >
+                        <template x-for="(month, index) in months" :key="index">
+                            <option :value="index + 1" x-text="month"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="bg-white shadow-md rounded-lg overflow-x-auto">
+            <table class="w-full text-sm text-left">
+                <!-- Table Header -->
+                <thead class="bg-gray-100 text-gray-600 uppercase">
+                    <tr>
+                        <th class="px-4 py-3 sticky left-0 bg-gray-100 z-10">Student Name</th>
+                        <template x-for="date in monthDates" :key="date">
+                            <th class="px-4 py-3 text-center" x-text="formatDateHeader(date)"></th>
+                        </template>
+                        <th class="px-4 py-3 text-center">Total Present</th>
                     </tr>
                 </thead>
+
+                <!-- Table Body -->
                 <tbody>
-                    {% for student_id, data in attendance_matrix.items %}
-                    <tr>
-                        <td class="sticky-column font-semibold">{{ data.student_name }}</td>
-                        <td class="sticky-column font-semibold">{{ data.roll_number }}</td>
-                        {% for date in dates %}
-                        {% with date_str=date|date:"Y-m-d" %}
-                        <td class="attendance-cell {% if data.attendance|dictsort:date_str %}present{% else %}absent{% endif %}"
-                            data-student="{{ student_id }}"
-                            data-date="{{ date_str }}">
-                            {% if data.attendance|dictsort:date_str %}P{% else %}A{% endif %}
-                        </td>
-                        {% endwith %}
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
+                    <template x-for="(student, studentId) in attendanceMatrix" :key="studentId">
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 bg-white" x-text="student.student_name"></td>
+                            
+                            <!-- Attendance Checkboxes -->
+                            <template x-for="date in monthDates" :key="date">
+                                <td class="px-4 py-3 text-center">
+                                    <input 
+                                        type="checkbox" 
+                                        :checked="student.attendance[date]"
+                                        @change="toggleAttendance(studentId, date, $event.target.checked)"
+                                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                    >
+                                </td>
+                            </template>
+
+                            <!-- Total Present Days -->
+                            <td class="px-4 py-3 text-center font-bold" 
+                                x-text="calculatePresentDays(student.attendance)">
+                            </td>
+                        </tr>
+                    </template>
                 </tbody>
             </table>
         </div>
+
+        <!-- Actions -->
+        <div class="mt-6 flex justify-between items-center">
+            <div class="text-gray-600">
+                Total Students: <span x-text="Object.keys(attendanceMatrix).length"></span>
+            </div>
+            <div class="flex space-x-4">
+                <button 
+                    @click="resetAttendance"
+                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+                >
+                    Reset
+                </button>
+                <button 
+                    @click="saveAttendance"
+                    class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow-md transition"
+                >
+                    Save Attendance
+                </button>
+            </div>
+        </div>
     </div>
+
+    <script>
+        function attendanceManager() {
+            return {
+                selectedYear: new Date().getFullYear(),
+                selectedMonth: new Date().getMonth() + 1,
+                months: [
+                    'January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ],
+                availableYears: [], // Populated dynamically
+                monthDates: [],
+                attendanceMatrix: {},
+
+                // Computed Properties
+                formatCurrentMonth() {
+                    return `${this.months[this.selectedMonth - 1]} ${this.selectedYear}`;
+                },
+
+                formatDateHeader(dateStr) {
+                    return new Date(dateStr).getDate();
+                },
+
+                calculatePresentDays(attendance) {
+                    return Object.values(attendance).filter(present => present).length;
+                },
+
+                // Attendance Management Methods
+                toggleAttendance(studentId, dateStr, isPresent) {
+                    this.attendanceMatrix[studentId].attendance[dateStr] = isPresent;
+                },
+
+                resetAttendance() {
+                    Object.values(this.attendanceMatrix).forEach(student => {
+                        Object.keys(student.attendance).forEach(date => {
+                            student.attendance[date] = false;
+                        });
+                    });
+                },
+
+                // Data Loading and Initialization
+                initializeAttendance() {
+                    // Generate years (current year ±5)
+                    const currentYear = new Date().getFullYear();
+                    this.availableYears = Array.from({length: 11}, (_, i) => currentYear - 5 + i);
+
+                    // Initial load
+                    this.loadAttendance();
+                },
+
+                loadAttendance() {
+                    // Simulated data loading - replace with actual AJAX/fetch
+                    this.generateMonthDates();
+                    this.mockAttendanceData();
+                },
+
+                generateMonthDates() {
+                    const year = this.selectedYear;
+                    const month = this.selectedMonth;
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    
+                    this.monthDates = Array.from(
+                        {length: daysInMonth}, 
+                        (_, i) => `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`
+                    );
+                },
+
+                mockAttendanceData() {
+                    // Replace this with actual backend data fetching
+                    this.attendanceMatrix = {
+                        1: {
+                            student_name: 'John Doe',
+                            attendance: Object.fromEntries(
+                                this.monthDates.map(date => [date, Math.random() < 0.7])
+                            )
+                        },
+                        2: {
+                            student_name: 'Jane Smith',
+                            attendance: Object.fromEntries(
+                                this.monthDates.map(date => [date, Math.random() < 0.8])
+                            )
+                        },
+                        // Add more students as needed
+                    };
+                },
+
+                saveAttendance() {
+                    const payload = {};
+                    
+                    Object.entries(this.attendanceMatrix).forEach(([studentId, studentData]) => {
+                        payload[studentId] = studentData.attendance;
+                    });
+
+                    // Simulated AJAX request - replace with actual Django endpoint
+                    fetch(`/excel-attendance/class_id/?year=${this.selectedYear}&month=${this.selectedMonth}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Add CSRF token if needed
+                            // 'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({ attendance: payload })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert('Attendance saved successfully!');
+                        } else {
+                            alert('Error saving attendance: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while saving attendance.');
+                    });
+                }
+            };
+        }
+    </script>
 </body>
 </html>
