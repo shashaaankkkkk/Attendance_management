@@ -95,4 +95,24 @@ class ClassForm(forms.ModelForm):
     
     class Meta:
         model = Class
-        fields = ['name', 'teachers', 'program']
+        fields = "__all__"
+
+from django import forms
+
+class ClassSelectionForm(forms.Form):
+    class_id = forms.ModelChoiceField(
+        queryset=Class.objects.all(),
+        label="Select Class",
+        empty_label="Choose...",
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
+class AttendanceForm(forms.ModelForm):
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"}), 
+        required=True
+    )
+
+    class Meta:
+        model = Attendance
+        fields = ["student", "date", "present"]
