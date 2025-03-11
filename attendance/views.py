@@ -27,7 +27,7 @@ from .models import (
 from .forms import (
     LoginForm, VerifyOTPForm, AttendanceForm, StudentProfileForm, 
     UserProfileForm, ProgramForm, ClassForm, BulkStudentUploadForm, 
-    FirstLoginPasswordChangeForm, ExportAttendanceForm
+    FirstLoginPasswordChangeForm, ExportAttendanceForm,AttendanceForm,ClassSelectionForm
 )
 
 
@@ -802,42 +802,62 @@ def excel_attendance(request, class_id):
 
     return render(request, 'attendance/excel_attendance.html', context)
 
-@login_required
-@require_http_methods(["GET", "POST"])
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from attendance.models import Class, Attendance, Student, Timetable
+from attendance.forms import AttendanceForm
+from django import forms
+
+def select_class(request):
+    """
+    View to select a class before adding past attendance.
+    """
+    classes = Class.objects.all()
+
+    if request.method == "POST":
+        class_id = request.POST.get("class_id")
+        return redirect("add_past_attendance", class_id=class_id)
+
+    return render(request, "attendance/select_class.html", {"classes": classes})
+from django.shortcuts import render, get_object_or_404, redirect
+from django.forms import modelformset_factory
+from django.contrib import messages
+from .models import Attendance, Class, Student
+from .forms import AttendanceForm
+from datetime import date
+
 def add_past_attendance(request, class_id):
-    # Get the class or return 404 if not found
     class_instance = get_object_or_404(Class, id=class_id)
-    
-    # Get all timetables for this class
-    timetables = Timetable.objects.filter(class_instance=class_instance)
-    
-    # Get students in the class's program
-    students = Student.objects.filter(program=class_instance.program)
-    
-    if request.method == 'POST':
-        # Get the selected timetable from the form
-        timetable_id = request.POST.get('timetable')
-        selected_timetable = get_object_or_404(Timetable, id=timetable_id, class_instance=class_instance)
-        
-        # Process attendance submission
-        for student in students:
-            # Get attendance status for each student
-            present_status = request.POST.get(f'student_{student.id}', 'off')
-            
-            # Create or update attendance record
-            Attendance.objects.update_or_create(
-                student=student,
-                timetable=selected_timetable,
-                defaults={'present': present_status == 'on'}
-            )
-        
-        messages.success(request, 'Attendance recorded successfully!')
-        return redirect('add_past_attendance', class_id=class_id)
-    
-    # Prepare context for rendering
+
+    # Fetch students for this class
+    available_students = Student.objects.filter(program=class_instance.program)
+
+    # Fetch attendance records
+    attendance_records = Attendance.objects.filter(timetable__class_instance=class_instance).select_related("student", "timetable")
+
+    # Define a formset with extra fields based on available students
+    AttendanceFormSet = modelformset_factory(Attendance, form=AttendanceForm, extra=len(available_students))
+
+    if request.method == "POST":
+        formset = AttendanceFormSet(request.POST)
+
+        # ✅ Get the selected date from the request
+        selected_date = request.POST.get("selected_date")
+
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            for instance in instances:
+                instance.date = selected_date  # ✅ Assign the same date to all records
+                instance.save()
+            messages.success(request, "Past attendance added successfully!")
+            return redirect("add_past_attendance", class_id=class_id)
+    else:
+        formset = AttendanceFormSet(queryset=Attendance.objects.none())
+
     context = {
-        'class_instance': class_instance,
-        'timetables': timetables,
-        'students': students,
+        "class_instance": class_instance,
+        "attendance_records": attendance_records,
+        "formset": formset,
+        "available_students": available_students,
     }
-    return render(request, 'attendance/add_past_attendance.html', context)
+    return render(request, "attendance/add_past_attendance.html", context)

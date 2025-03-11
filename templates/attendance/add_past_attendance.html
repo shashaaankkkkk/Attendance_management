@@ -3,91 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Past Attendance - {{ class_instance.name }}</title>
+    <title>Past Attendance</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-lg p-8">
-        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">
-            Add Past Attendance for {{ class_instance.name }}
-        </h1>
-        
-        <form method="post" class="space-y-4">
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="w-full max-w-lg bg-white p-6 rounded-lg shadow-md">
+
+        <h2 class="text-xl font-semibold text-center mb-4">
+            Attendance for {{ class_instance.name }}
+        </h2>
+
+        <form method="POST" class="space-y-4">
             {% csrf_token %}
-            
-            <div class="mb-4">
-                <label for="timetable" class="block text-gray-700 font-bold mb-2">
-                    Select Class Session
-                </label>
-                <select 
-                    name="timetable" 
-                    id="timetable" 
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                >
-                    <option value="">Select a Class Session</option>
-                    {% for timetable in timetables %}
-                    <option value="{{ timetable.id }}">
-                        {{ timetable.date }} | 
-                        {{ timetable.day_of_week }} | 
-                        {{ timetable.start_time }} - {{ timetable.end_time }}
-                        {% if timetable.topic %}({{ timetable.topic }}){% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
+
+            <!-- Select Date (Only Once) -->
+            <label for="selected_date" class="block text-sm font-medium text-gray-700">Select Date</label>
+            <input type="date" id="selected_date" name="selected_date" required class="w-full border px-3 py-2 rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+
+            {{ formset.management_form }}
+
+            <!-- Attendance Inputs -->
+            <div class="space-y-3">
+                {% for form in formset %}
+                    <div class="p-3 border rounded-md text-sm">
+                        {{ form.as_p }}
+                    </div>
+                {% endfor %}
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full bg-white border border-gray-200">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="py-3 px-4 text-left text-gray-600">Student Name</th>
-                            <th class="py-3 px-4 text-center text-gray-600">Present</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="py-3 px-4">
-                                {{ student.user.get_full_name|default:student.user.username }}
-                            </td>
-                            <td class="py-3 px-4 text-center">
-                                <input 
-                                    type="checkbox" 
-                                    name="student_{{ student.id }}" 
-                                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                >
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="flex justify-center mt-6">
-                <button 
-                    type="submit" 
-                    class="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300"
-                >
-                    Save Attendance
-                </button>
-            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-md text-sm hover:bg-blue-700 transition">
+                Submit
+            </button>
         </form>
-
-        {% if messages %}
-        <div class="mt-4">
-            {% for message in messages %}
-            <div class="
-                {% if message.tags == 'success' %}bg-green-100 text-green-700
-                {% elif message.tags == 'error' %}bg-red-100 text-red-700
-                {% endif %}
-                py-2 px-4 rounded mb-2"
-            >
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
     </div>
 </body>
 </html>

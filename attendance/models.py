@@ -90,6 +90,7 @@ class Attendance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='attendance_records')
     timetable = models.ForeignKey(Timetable, on_delete=models.CASCADE, related_name='attendance_records')
     present = models.BooleanField(default=False)
+    date = models.DateField(default=None) 
     
     class Meta:
         unique_together = ('student', 'timetable')

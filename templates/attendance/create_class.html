@@ -1,26 +1,50 @@
 {% extends 'attendance/admin_base.html' %}
 
 {% block content %}
-<div class="bg-white shadow-lg rounded-lg p-6">
+<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
     <h2 class="text-2xl font-bold text-gray-800 mb-4">Create New Class</h2>
 
     <form method="post" class="space-y-4">
         {% csrf_token %}
-        <div class="mb-4">
+
+        <!-- Class Name -->
+        <div>
             <label class="block text-gray-700 font-semibold mb-2">Class Name</label>
             {{ form.name }}
         </div>
-        
-        <div class="mb-4">
+
+        <!-- Class Code -->
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">Class Code</label>
+            {{ form.code }}
+        </div>
+
+        <!-- Teachers -->
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">Assign Teachers</label>
+            <div class="flex flex-wrap gap-2">
+                {% for teacher in form.teachers %}
+                    <label class="flex items-center space-x-2">
+                        {{ teacher.tag }}  <!-- Checkbox input -->
+                        <span class="text-gray-800">{{ teacher.choice_label }}</span> <!-- Teacher name -->
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Program -->
+        <div>
             <label class="block text-gray-700 font-semibold mb-2">Program</label>
             {{ form.program }}
         </div>
 
-        <div class="mb-4">
-            <label class="block text-gray-700 font-semibold mb-2">Assign Teachers</label>
-            {{ form.teachers }}
+        <!-- Semester -->
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">Semester</label>
+            {{ form.semester }}
         </div>
 
+        <!-- Submit Button -->
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
             Create Class
         </button>
