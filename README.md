@@ -1,3 +1,1 @@
-# sirkaattendancekaproject
-# architecture
-
+# Attendance Management System
